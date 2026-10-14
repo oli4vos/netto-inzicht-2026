@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bereken als medewerker van de Belastingdienst je netto huishoudinkomen in 2026 vanuit CAO Rijk-schaal, trede, uren, IKB en ABP-pensioen.">
+  <meta name="theme-color" content="#f2efe8">
+  <title>NettoInzicht Rijk 2026 — van salarisschaal naar netto</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#calculator">Naar de rekentool</a>
+
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="NettoInzicht, naar boven">
+      <span class="brand-mark" aria-hidden="true">N<span>/</span>I</span>
+      <span>NettoInzicht</span>
+    </a>
+    <div class="topbar-actions">
+      <span class="year-pill"><span class="status-dot"></span> Regels 2026</span>
+      <button class="text-button" type="button" data-open-modal="method">Berekening</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="eyebrow"><span>01</span> Voor medewerkers van de Belastingdienst</div>
+      <h1 id="hero-title">Van schaal naar<br><em>écht</em> netto.</h1>
+      <div class="hero-side">
+        <p>Kies je CAO Rijk-schaal, trede en uren. De tool verwerkt IKB, de eenmalige cao-uitkering, ABP-pensioen, belasting en toeslagen in één maandgemiddelde.</p>
+        <a class="primary-link" href="#calculator">Start je berekening <span aria-hidden="true">↘</span></a>
+      </div>
+    </section>
+
+    <section class="trust-row" aria-label="Kenmerken">
+      <span>CAO Rijk per 1 juli 2026</span>
+      <span>ABP-premies 2026</span>
+      <span>36 uur is voltijd</span>
+      <span>Alles blijft in je browser</span>
+    </section>
+
+    <section class="calculator-shell" id="calculator">
+      <aside class="input-panel" aria-labelledby="input-title">
+        <div class="panel-heading">
+          <div>
+            <span class="step-label">CAO Rijk 2026</span>
+            <h2 id="input-title">Vul in wat telt</h2>
+          </div>
+          <button class="reset-button" id="resetButton" type="button">Opnieuw</button>
+        </div>
+
+        <div class="scenario-row" aria-label="Voorbeeldscenario's">
+          <button type="button" data-scenario="starter">Starter</button>
+          <button type="button" data-scenario="family">Gezin</button>
+          <button type="button" data-scenario="couple">Tweeverdieners</button>
+        </div>
+
+        <form id="incomeForm">
+          <fieldset class="form-section open">
+            <legend>
+              <button class="section-toggle" type="button" aria-expanded="true">
+                <span><b>1</b> Inkomen</span><span aria-hidden="true">−</span>
+              </button>
+            </legend>
+            <div class="section-body">
+              <label class="switch-row employer-switch">
+                <span><strong>Belastingdienst / CAO Rijk</strong><small>Salaris, IKB en ABP automatisch berekend</small></span>
+                <input id="isRijkEmployee" name="isRijkEmployee" type="checkbox" role="switch" checked><i aria-hidden="true"></i>
+              </label>
+
+              <div class="conditional rijk-fields" id="rijkFields">
+                <div class="field-grid three">
+                  <div class="field">
+                    <label for="rijkScale">Salarisschaal</label>
+                    <select id="rijkScale" name="rijkScale">
+                      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
+                      <option>7</option><option>8</option><option>9</option><option selected>10</option><option>11</option><option>12</option>
+                      <option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="rijkStep">Trede / salarisnummer</label>
+                    <select id="rijkStep" name="rijkStep">
+                      <option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option>
+                      <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="rijkHours">Uren per week <small>36 = voltijd</small></label>
+                    <div class="suffix-input"><input id="rijkHours" name="rijkHours" type="number" min="1" max="36" step="1" value="36"><span>uur</span></div>
+                  </div>
+                </div>
+                <div class="cao-preview" aria-live="polite">
+                  <div><span>Salaris vanaf juli</span><strong id="rijkSalaryPreview">€ 0</strong></div>
+                  <div><span>Gemiddeld IKB</span><strong id="rijkIkbPreview">€ 0</strong></div>
+                  <div><span>ABP eigen bijdrage</span><strong id="rijkPensionPreview">€ 0</strong></div>
+                  <div><span>Eenmalige cao-uitkering</span><strong id="rijkCaoPreview">€ 0</strong></div>
+                </div>
+                <label class="check-row"><input id="rijkAugustEmployed" name="rijkAugustEmployed" type="checkbox" checked><span>Op 1 augustus 2026 in dienst (recht op eenmalige cao-uitkering)</span></label>
+                <div class="field">
+                  <label for="rijkPensionExtras">Overige pensioengevende toelagen p/j <small>voltijdbedrag op 1 januari</small></label>
+                  <div class="money-input compact"><span>€</span><input id="rijkPensionExtras" name="rijkPensionExtras" type="number" min="0" step="100" value="0"></div>
+                </div>
+                <p class="field-note">De jaarberekening gebruikt zes maanden van de oude tabel en zes maanden van de 2,7% hogere tabel per 1 juli 2026. De ABP-premie volgt het pensioengevend inkomen op 1 januari en veronderstelt dat schaal, trede en uren toen gelijk waren.</p>
+              </div>
+
+              <div class="conditional manual-income-fields" id="manualIncomeFields" hidden>
+                <div class="field large-field">
+                  <label for="monthlyGross">Bruto salaris per maand</label>
+                  <div class="money-input"><span>€</span><input id="monthlyGross" name="monthlyGross" type="number" min="0" step="50" value="3200" inputmode="decimal"></div>
+                </div>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="holidayRate">Vakantiegeld</label>
+                    <div class="suffix-input"><input id="holidayRate" name="holidayRate" type="number" min="0" max="30" step="0.5" value="8"><span>%</span></div>
+                  </div>
+                  <div class="field">
+                    <label for="pensionMonthly">Eigen pensioenpremie per maand</label>
+                    <div class="money-input compact"><span>€</span><input id="pensionMonthly" name="pensionMonthly" type="number" min="0" step="10" value="120"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="annualBonus">Overige bruto toelagen p/j</label>
+                  <div class="money-input compact"><span>€</span><input id="annualBonus" name="annualBonus" type="number" min="0" step="100" value="0"></div>
+                </div>
+                <div class="field">
+                  <label for="carePremium">Zorgpremie per volwassene p/m</label>
+                  <div class="money-input compact"><span>€</span><input id="carePremium" name="carePremium" type="number" min="0" step="1" value="159"></div>
+                </div>
+                <div class="field">
+                  <label for="taxableAddition">Fiscale bijtelling per jaar <small>bijv. auto van de zaak</small></label>
+                  <div class="money-input compact"><span>€</span><input id="taxableAddition" name="taxableAddition" type="number" min="0" step="100" value="0"></div>
+                </div>
+                <div class="field">
+                  <label for="netReimbursements">Netto vergoedingen p/m</label>
+                  <div class="money-input compact"><span>€</span><input id="netReimbursements" name="netReimbursements" type="number" min="0" step="10" value="0"></div>
+                </div>
+                <div class="field">
+                  <label for="otherDeductions">Overige looninhoudingen p/m</label>
+                  <div class="money-input compact"><span>€</span><input id="otherDeductions" name="otherDeductions" type="number" min="0" step="10" value="0"></div>
+                </div>
+                <div class="field">
+                  <label for="incomeAdjustment">Correctie toetsingsinkomen p/j <small>mag negatief</small></label>
+                  <div class="money-input compact"><span>€</span><input id="incomeAdjustment" name="incomeAdjustment" type="number" step="100" value="0"></div>
+                </div>
+              </div>
+              <p class="field-note">IKB en de cao-uitkering worden als belastbaar loon meegerekend. De bijtelling verhoogt het belastbare loon maar niet de uitbetaling. De correctie op het toetsingsinkomen beïnvloedt alleen toeslagen.</p>
+              <label class="switch-row">
+                <span><strong>Toeslag- of fiscale partner</strong><small>Partnerinkomen telt mee voor toeslagen</small></span>
+                <input id="hasPartner" name="hasPartner" type="checkbox" role="switch"><i aria-hidden="true"></i>
+              </label>
+              <div class="conditional" id="partnerFields" hidden>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="partnerGross">Bruto salaris partner p/m</label>
+                    <div class="money-input compact"><span>€</span><input id="partnerGross" name="partnerGross" type="number" min="0" step="50" value="2600"></div>
+                  </div>
+                  <div class="field">
+                    <label for="partnerPension">Pensioenpremie partner p/m</label>
+                    <div class="money-input compact"><span>€</span><input id="partnerPension" name="partnerPension" type="number" min="0" step="10" value="90"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-section">
+            <legend>
+              <button class="section-toggle" type="button" aria-expanded="false">
+                <span><b>2</b> Wonen & vermogen</span><span aria-hidden="true">+</span>
+              </button>
+            </legend>
+            <div class="section-body" hidden>
+              <label class="switch-row">
+                <span><strong>Ik huur een zelfstandige woning</strong><small>Voor een indicatie van huurtoeslag</small></span>
+                <input id="isRenter" name="isRenter" type="checkbox" role="switch"><i aria-hidden="true"></i>
+              </label>
+              <div class="conditional" id="rentFields" hidden>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="baseRent">Kale huur per maand</label>
+                    <div class="money-input compact"><span>€</span><input id="baseRent" name="baseRent" type="number" min="0" step="5" value="750"></div>
+                  </div>
+                  <div class="field">
+                    <label for="householdMembers">Personen in huis</label>
+                    <input id="householdMembers" name="householdMembers" type="number" min="1" max="10" value="1">
+                  </div>
+                  <div class="field">
+                    <label for="coResidentIncome">Meetellend inkomen medebewoners p/j</label>
+                    <div class="money-input compact"><span>€</span><input id="coResidentIncome" name="coResidentIncome" type="number" min="0" step="100" value="0"></div>
+                  </div>
+                </div>
+                <label class="check-row"><input id="youngRenter" name="youngRenter" type="checkbox"><span>Oudste bewoner is 18–20 jaar</span></label>
+                <label class="check-row"><input id="coResidentOverAsset" name="coResidentOverAsset" type="checkbox"><span>Een medebewoner heeft meer dan €38.479 vermogen</span></label>
+                <p class="field-note">Vul alleen het inkomen in dat volgens de Awir en Wht meetelt. De wettelijke vrijstelling voor een inwonend kind onder 23 jaar verwerk je dus vooraf.</p>
+              </div>
+              <div class="field">
+                <label for="assets">Vermogen op 1 januari 2026 <small>zonder eigen woning</small></label>
+                <div class="money-input"><span>€</span><input id="assets" name="assets" type="number" min="0" step="500" value="5000"></div>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-section">
+            <legend>
+              <button class="section-toggle" type="button" aria-expanded="false">
+                <span><b>3</b> Kinderen & opvang</span><span aria-hidden="true">+</span>
+              </button>
+            </legend>
+            <div class="section-body" hidden>
+              <div class="field-grid four">
+                <div class="field"><label for="kids05">0–5 jaar</label><input id="kids05" name="kids05" type="number" min="0" max="8" value="0"></div>
+                <div class="field"><label for="kids611">6–11 jaar</label><input id="kids611" name="kids611" type="number" min="0" max="8" value="0"></div>
+                <div class="field"><label for="kids1215">12–15 jaar</label><input id="kids1215" name="kids1215" type="number" min="0" max="8" value="0"></div>
+                <div class="field"><label for="kids1617">16–17 jaar</label><input id="kids1617" name="kids1617" type="number" min="0" max="8" value="0"></div>
+              </div>
+              <label class="check-row"><input id="iackEligible" name="iackEligible" type="checkbox" checked><span>Jongste kind woont minstens 6 maanden bij mij</span></label>
+              <label class="switch-row">
+                <span><strong>Betaalde kinderopvang</strong><small>Maximaal 230 uur per kind per maand</small></span>
+                <input id="hasChildcare" name="hasChildcare" type="checkbox" role="switch"><i aria-hidden="true"></i>
+              </label>
+              <div class="conditional" id="childcareFields" hidden>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="childcareType">Soort opvang</label>
+                    <select id="childcareType" name="childcareType">
+                      <option value="daycare">Dagopvang</option>
+                      <option value="bso">Buitenschoolse opvang</option>
+                      <option value="host">Gastouder</option>
+                    </select>
+                  </div>
+                  <div class="field"><label for="childcareChildren">Aantal kinderen</label><input id="childcareChildren" name="childcareChildren" type="number" min="1" max="8" value="1"></div>
+                  <div class="field"><label for="childcareHours">Uren per kind p/m</label><input id="childcareHours" name="childcareHours" type="number" min="0" max="230" step="5" value="80"></div>
+                  <div class="field"><label for="childcareRate">Werkelijke uurprijs</label><div class="money-input compact"><span>€</span><input id="childcareRate" name="childcareRate" type="number" min="0" step="0.1" value="11.23"></div></div>
+                </div>
+              </div>
+            </div>
+          </fieldset>
+        </form>
+      </aside>
+
+      <section class="result-panel" aria-labelledby="result-title" aria-live="polite">
+        <div class="result-topline">
+          <span class="step-label light">Jouw uitkomst</span>
+          <span class="calc-status"><i></i> Live berekend</span>
+        </div>
+        <div class="result-hero">
+          <h2 id="result-title">Over per maand</h2>
+          <div class="big-number" id="disposableMonthly">€ 0</div>
+          <p id="resultSummary">na belasting, pensioen, zorg, huur en opvang — inclusief regelingen</p>
+        </div>
+
+        <div class="mini-stats">
+          <div><span>Netto loon huishouden</span><strong id="netWageMonthly">€ 0</strong></div>
+          <div><span>Regelingen & kinderbijslag</span><strong id="benefitsMonthly">€ 0</strong></div>
+          <div><span>Zorg, huur & opvang</span><strong id="selectedCostsMonthly">€ 0</strong></div>
+        </div>
+
+        <div class="result-card flow-card">
+          <div class="card-title-row"><h3>Van bruto naar besteedbaar</h3><span>per maand</span></div>
+          <div id="flowRows" class="flow-rows"></div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-card pressure-card">
+            <div class="card-title-row"><h3>€100 extra bruto</h3><span>scenario</span></div>
+            <div class="pressure-number"><strong id="extraKeeps">€ 0</strong><span>houd je over</span></div>
+            <div class="meter"><span id="pressureMeter"></span></div>
+            <p id="pressureText">De rest gaat naar belasting of lagere toeslagen.</p>
+          </div>
+          <div class="result-card allowances-card">
+            <div class="card-title-row"><h3>Regelingen</h3><button type="button" data-open-modal="method">Uitleg</button></div>
+            <ul id="allowanceList"></ul>
+          </div>
+        </div>
+
+        <div class="result-card compare-card">
+          <div>
+            <span class="micro-label">Vergelijking</span>
+            <h3 id="annualDisposable">€ 0 per jaar</h3>
+            <p>over na de gekozen vaste posten</p>
+          </div>
+          <button id="copyResult" type="button">Kopieer samenvatting</button>
+        </div>
+
+        <p class="result-disclaimer">Indicatieve netto-uitkomst op jaarbasis. CAO Rijk-salaris, IKB en reguliere ABP-werknemerspremies zijn volgens de 2026-regels berekend; individuele loonstrookcorrecties, eerdere schaalwijzigingen en bijzondere pensioensituaties kunnen afwijken.</p>
+      </section>
+    </section>
+
+    <section class="explain-section">
+      <div>
+        <span class="eyebrow"><span>02</span> Zie de samenloop</span>
+        <h2>Geen zwart<br>doosje.</h2>
+      </div>
+      <div class="explain-grid">
+        <article><span>01</span><h3>CAO Rijk</h3><p>Schaal, salarisnummer en uren bepalen het salaris. De verhoging per 1 juli en cao-uitkering tellen mee.</p></article>
+        <article><span>02</span><h3>IKB & ABP</h3><p>Het IKB bedraagt 16,50%. De ABP-bijdrage gebruikt de officiële franchise en werknemerspercentages.</p></article>
+        <article><span>03</span><h3>Belasting & toeslagen</h3><p>Box 1, kortingen en huishoudregelingen reageren samen op het volledige jaarinkomen.</p></article>
+        <article><span>04</span><h3>Netto effect</h3><p>Zie direct wat na pensioen, zorg, huur en opvang gemiddeld per maand overblijft.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand footer-brand" href="#top"><span class="brand-mark">N<span>/</span>I</span><span>NettoInzicht</span></a>
+    <p>Gebouwd voor overzicht, niet als fiscaal advies.</p>
+    <button class="text-button" type="button" data-open-modal="sources">Bronnen & actualiteit</button>
+  </footer>
+
+  <dialog id="infoModal">
+    <div class="modal-head"><span id="modalKicker">Methodiek</span><button id="closeModal" type="button" aria-label="Sluiten">×</button></div>
+    <div id="modalContent" class="modal-content"></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite">Samenvatting gekopieerd</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

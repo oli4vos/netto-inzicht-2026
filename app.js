@@ -1,0 +1,425 @@
+(() => {
+  'use strict';
+
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+  const euroPrecise = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const num = id => Math.max(0, Number($(`#${id}`).value) || 0);
+  const signed = id => Number($(`#${id}`).value) || 0;
+
+  const LIMITS = {
+    tax1: 38883,
+    tax2: 78426,
+    generalCreditStart: 29736,
+    careAssetsSingle: 146011,
+    careAssetsPartners: 184633,
+    rentAssetsSingle: 38479,
+    rentAssetsPartners: 76958,
+    rentCap: 932.93,
+    youngRentCap: 498.20,
+    qualityRent: 498.20,
+    lowRentCap: 713.02,
+    highRentCap: 764.14
+  };
+
+  // CAO Rijk § 6.3: bruto maandbedragen bij 36 uur, geldig vanaf 1 juli 2026.
+  const RIJK_SALARIES_JULY = {
+    1: [2399.87,2440.96,2482.79,2525.34,2568.64,2612.69,2657.52,2703.13,2749.53,2796.75,2844.80],
+    2: [2525.34,2568.64,2612.69,2657.52,2703.13,2749.53,2796.75,2844.80,2893.69,2943.42,2994.03],
+    3: [2657.52,2703.13,2749.53,2796.75,2844.80,2893.69,2943.42,2994.03,3045.54,3097.95,3170.57],
+    4: [2749.53,2796.75,2844.80,2893.69,2943.42,2994.03,3045.54,3097.95,3170.57,3251.84,3333.81],
+    5: [2844.80,2893.69,2943.42,2994.03,3045.54,3097.95,3170.57,3251.84,3333.81,3415.06,3496.31],
+    6: [2943.42,2994.03,3045.54,3097.95,3170.57,3251.84,3333.81,3415.06,3496.31,3579.02,3660.24],
+    7: [3097.95,3170.57,3251.84,3333.81,3415.06,3496.31,3579.02,3660.24,3741.48,3854.80,3984.50],
+    8: [3333.81,3415.06,3496.31,3579.02,3660.24,3741.48,3854.80,3984.50,4132.76,4293.80,4457.77],
+    9: [3579.02,3660.24,3741.48,3854.80,3984.50,4132.76,4293.80,4457.77,4636.63,4818.39,4999.46],
+    10: [3496.31,3660.24,3854.80,4132.76,4457.77,4636.63,4818.39,4999.46,5171.91,5353.68,5535.40],
+    11: [4132.76,4457.77,4636.63,4818.39,4999.46,5171.91,5353.68,5535.40,5769.16,6022.89,6275.94],
+    12: [4818.39,4999.46,5171.91,5353.68,5535.40,5769.16,6022.89,6275.94,6545.34,6819.72,7094.18],
+    13: [5353.68,5535.40,5769.16,6022.89,6275.94,6545.34,6819.72,7094.18,7369.22,7659.07,7956.89],
+    14: [6022.89,6275.94,6545.34,6819.72,7094.18,7369.22,7659.07,7956.89,8229.06,8505.47,8781.26],
+    15: [6819.72,7094.18,7369.22,7659.07,7956.89,8229.06,8505.47,8781.26,9028.02,9286.47,9561.61],
+    16: [7659.07,7956.89,8229.06,8505.47,8781.26,9028.02,9286.47,9561.61,9831.67,10106.79,10407.54],
+    17: [8505.47,8781.26,9028.02,9286.47,9561.61,9831.67,10106.79,10407.54,10716.21,11025.76,11334.46],
+    18: [9286.47,9561.61,9831.67,10106.79,10407.54,10716.21,11025.76,11334.46,11671.25,12008.02,12345.58]
+  };
+
+  const RIJK = {
+    fulltimeHours: 36,
+    julyIncrease: 1.027,
+    ikbRate: .165,
+    ikbFloorJanuary: 440,
+    ikbFloorJuly: 452,
+    opnpEmployeeRate: .0813,
+    opnpFranchise: 19200,
+    opnpMaximum: 137800,
+    aopEmployeeRate: .0021,
+    aopFranchise: 29700
+  };
+
+  // Bijlage I bij het Besluit kinderopvangtoeslag, tabel 2026.
+  const kotTable = [
+    [24149,96,96],[25756,96,96],[27363,96,96],[28973,96,96],[30579,96,96],[32189,96,96],
+    [33795,96,96],[35400,96,96],[37129,96,96],[38855,96,96],[40586,96,96],[42313,96,96],
+    [44046,96,96],[45776,96,96],[47546,96,96],[49318,96,96],[51092,96,96],[52864,96,96],
+    [54641,96,96],[56412,96,96],[58184,95.5,95.6],[59957,94.8,95.6],[61895,93.9,95.6],
+    [65695,92.4,95.6],[69492,91.6,95.2],[73292,90.5,94.6],[77094,88.2,94.2],
+    [80891,85.9,93.9],[84693,83.7,93.2],[88491,81.2,92.7],[92291,78.9,92.2],
+    [96091,76.7,91.5],[99889,74.3,90.9],[103694,72.1,90.5],[107492,69.6,90.2],
+    [111290,67.3,89.5],[115090,65.1,89.1],[118963,62.7,88.6],[122857,60.6,87.9],
+    [126747,58.5,87.4],[130638,56.4,87],[134527,54.2,86.7],[138420,52.3,86],
+    [142312,50.4,85.4],[146205,48.5,85],[150092,46.5,84.4],[153982,44.5,84],
+    [157877,42.5,83.3],[161766,40.5,82.7],[165657,38.5,81.7],[169547,36.5,81.4],
+    [173440,36.5,80.6],[177335,36.5,79.7],[181223,36.5,79.1],[185114,36.5,78.2],
+    [189002,36.5,77.7],[192896,36.5,76.9],[196789,36.5,76.2],[200681,36.5,75.5],
+    [204571,36.5,74.5],[208458,36.5,74],[212353,36.5,73.3],[216242,36.5,72.5],
+    [220134,36.5,71.8],[224026,36.5,71.2],[227915,36.5,70.4],[231807,36.5,69.6],
+    [235697,36.5,69.1],[Infinity,36.5,68.2]
+  ];
+
+  const scenarios = {
+    starter: { isRijkEmployee: true, rijkScale: 8, rijkStep: 2, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 40, otherDeductions: 0, incomeAdjustment: 0, hasPartner: false, isRenter: true, baseRent: 725, householdMembers: 1, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 7000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false },
+    family: { isRijkEmployee: true, rijkScale: 10, rijkStep: 5, rijkHours: 32, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 80, otherDeductions: 15, incomeAdjustment: 0, hasPartner: true, partnerGross: 2550, partnerPension: 90, isRenter: true, baseRent: 910, householdMembers: 4, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 15000, kids05: 1, kids611: 1, kids1215: 0, kids1617: 0, iackEligible: true, hasChildcare: true, childcareType: 'daycare', childcareChildren: 1, childcareHours: 96, childcareRate: 11.65 },
+    couple: { isRijkEmployee: true, rijkScale: 12, rijkStep: 8, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 7200, netReimbursements: 50, otherDeductions: 60, incomeAdjustment: 0, hasPartner: true, partnerGross: 3600, partnerPension: 140, isRenter: false, assets: 32000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false }
+  };
+
+  function progressiveTax(income) {
+    const a = Math.min(income, LIMITS.tax1) * .3575;
+    const b = Math.min(Math.max(income - LIMITS.tax1, 0), LIMITS.tax2 - LIMITS.tax1) * .3756;
+    const c = Math.max(income - LIMITS.tax2, 0) * .495;
+    return a + b + c;
+  }
+
+  function generalCredit(income) {
+    if (income <= LIMITS.generalCreditStart) return 3115;
+    if (income >= LIMITS.tax2) return 0;
+    return Math.max(0, 3115 - .06398 * (income - LIMITS.generalCreditStart));
+  }
+
+  function labourCredit(income) {
+    if (income <= 11965) return .08324 * income;
+    if (income <= 25845) return 996 + .31009 * (income - 11965);
+    if (income <= 45592) return 5300 + .0195 * (income - 25845);
+    if (income <= 132920) return Math.max(0, 5685 - .0651 * (income - 45592));
+    return 0;
+  }
+
+  function iack(income) {
+    if (income <= 6239) return 0;
+    if (income <= 32719) return Math.min(3032, .1145 * (income - 6239));
+    return 3032;
+  }
+
+  function employeeNet(monthly, holidayRate, bonus, pensionMonthly, iackApplies, options = {}) {
+    const gross = options.annualGross ?? (monthly * 12 * (1 + holidayRate / 100) + bonus);
+    const pension = options.annualPension ?? pensionMonthly * 12;
+    const taxableAddition = options.taxableAddition || 0;
+    const reimbursements = (options.netReimbursements || 0) * 12;
+    const deductions = (options.otherDeductions || 0) * 12;
+    const taxable = Math.max(0, gross + taxableAddition - pension);
+    const taxBefore = progressiveTax(taxable);
+    const credits = Math.min(taxBefore, generalCredit(taxable) + labourCredit(taxable) + (iackApplies ? iack(taxable) : 0));
+    const tax = Math.max(0, taxBefore - credits);
+    return { gross, pension, taxableAddition, reimbursements, deductions, taxable, taxBefore, credits, tax, net: gross + reimbursements - pension - tax - deductions, iack: iackApplies ? iack(taxable) : 0 };
+  }
+
+  function rijkProfile(annualGrossExtra = 0) {
+    const scale = Math.min(18, Math.max(1, Math.round(num('rijkScale'))));
+    const step = Math.min(10, Math.max(0, Math.round(num('rijkStep'))));
+    const hours = Math.min(RIJK.fulltimeHours, Math.max(1, num('rijkHours')));
+    const factor = hours / RIJK.fulltimeHours;
+    const salaryJulyFulltime = RIJK_SALARIES_JULY[scale][step];
+    const salaryJanuaryFulltime = Math.round((salaryJulyFulltime / RIJK.julyIncrease) * 100) / 100;
+    const ikbJanuaryFulltime = Math.max(salaryJanuaryFulltime * RIJK.ikbRate, RIJK.ikbFloorJanuary);
+    const ikbJulyFulltime = Math.max(salaryJulyFulltime * RIJK.ikbRate, RIJK.ikbFloorJuly);
+    const salaryAnnual = (salaryJanuaryFulltime * 6 + salaryJulyFulltime * 6) * factor;
+    const ikbAnnual = (ikbJanuaryFulltime * 6 + ikbJulyFulltime * 6) * factor;
+    const caoFulltime = scale <= 5 ? 1400 : scale <= 10 ? 1200 : 1000;
+    const caoPayment = $('#rijkAugustEmployed').checked ? caoFulltime * factor : 0;
+    const pensionableFulltime = 12 * (salaryJanuaryFulltime + ikbJanuaryFulltime) + num('rijkPensionExtras');
+    const opnpBase = Math.max(0, Math.min(pensionableFulltime, RIJK.opnpMaximum) - RIJK.opnpFranchise) * factor;
+    const aopBase = Math.max(0, pensionableFulltime - RIJK.aopFranchise) * factor;
+    const opnpContribution = opnpBase * RIJK.opnpEmployeeRate;
+    const aopContribution = aopBase * RIJK.aopEmployeeRate;
+    const pensionAnnual = opnpContribution + aopContribution;
+    const otherGross = num('annualBonus') + annualGrossExtra;
+
+    return {
+      scale, step, hours, factor,
+      salaryJanuaryFulltime, salaryJulyFulltime,
+      salaryJanuary: salaryJanuaryFulltime * factor,
+      salaryJuly: salaryJulyFulltime * factor,
+      salaryAnnual, ikbAnnual, caoPayment, otherGross,
+      ikbAverageMonthly: ikbAnnual / 12,
+      pensionableFulltime, opnpContribution, aopContribution, pensionAnnual,
+      grossAnnual: salaryAnnual + ikbAnnual + caoPayment + otherGross
+    };
+  }
+
+  function careAllowance(income, partner, assets) {
+    const assetLimit = partner ? LIMITS.careAssetsPartners : LIMITS.careAssetsSingle;
+    if (assets > assetLimit) return 0;
+    // Art. 2 Wzt, Regeling standaardpremie 2026 (€2.119) en het Besluit percentages
+    // drempel- en toetsingsinkomen zorgtoeslag (1,912%/4,289% en 13,730%).
+    const threshold = 29736;
+    const standardPremium = 2119 * (partner ? 2 : 1);
+    const basePercentage = partner ? .04289 : .01912;
+    const normPremium = basePercentage * threshold + .13730 * Math.max(0, income - threshold);
+    return Math.max(0, standardPremium - normPremium);
+  }
+
+  function childBudget(income, partner, assets, kids05, kids611, kids1215, kids1617) {
+    const count = kids05 + kids611 + kids1215 + kids1617;
+    if (!count) return 0;
+    const assetLimit = partner ? LIMITS.careAssetsPartners : LIMITS.careAssetsSingle;
+    if (assets > assetLimit) return 0;
+    const base = count * 2580 + kids1215 * 724 + kids1617 * 964 + (!partner ? 3416 : 0);
+    const threshold = partner ? 39141 : 29736;
+    return Math.max(0, base - Math.max(0, income - threshold) * .076);
+  }
+
+  function childBenefit(kids05, kids611, kids1215, kids1617) {
+    const avg05 = (295.07 * 2 + 298.40 * 2) / 4;
+    const avg611 = (358.30 * 2 + 362.35 * 2) / 4;
+    const avg1217 = (421.53 * 2 + 426.29 * 2) / 4;
+    return 4 * (kids05 * avg05 + kids611 * avg611 + (kids1215 + kids1617) * avg1217);
+  }
+
+  function rentAllowance(income, partner, assets, rent, members, young, coResidentOverAsset) {
+    if (!rent || coResidentOverAsset || assets > (partner ? LIMITS.rentAssetsPartners : LIMITS.rentAssetsSingle)) return 0;
+    const multiPersonHousehold = members > 1;
+    const incomeFloor = multiPersonHousehold ? 31500 : 23425;
+    const minBase = multiPersonHousehold ? 200.71 : 202.52;
+    const rentCap = young ? LIMITS.youngRentCap : LIMITS.rentCap;
+    const eligibleRent = Math.min(rent, rentCap);
+    const ownContribution = minBase;
+    const aftopping = members >= 3 ? LIMITS.highRentCap : LIMITS.lowRentCap;
+    const partA = Math.max(0, Math.min(eligibleRent, LIMITS.qualityRent) - ownContribution);
+    const partB = Math.max(0, Math.min(eligibleRent, aftopping) - Math.max(LIMITS.qualityRent, ownContribution)) * .65;
+    const partC = Math.max(0, eligibleRent - Math.max(aftopping, ownContribution)) * .40;
+    const maximum = partA + partB + partC;
+    const incomeReduction = Math.max(0, income - incomeFloor) * (multiPersonHousehold ? .22 : .27) / 12;
+    return Math.max(0, (maximum - incomeReduction) * 12);
+  }
+
+  function kotPercent(income, nextChild) {
+    const bracket = kotTable.find(row => income <= row[0]) || kotTable[kotTable.length - 1];
+    return bracket[nextChild ? 2 : 1] / 100;
+  }
+
+  function childcare(income, enabled, type, children, hours, rate) {
+    if (!enabled || !children || !hours) return { cost: 0, allowance: 0, own: 0 };
+    const maxRates = { daycare: 11.23, bso: 9.98, host: 8.49 };
+    const cappedHours = Math.min(230, hours);
+    const actualCost = rate * cappedHours * children * 12;
+    const eligiblePerChild = Math.min(rate, maxRates[type]) * cappedHours * 12;
+    const allowance = eligiblePerChild * kotPercent(income, false) + eligiblePerChild * Math.max(0, children - 1) * kotPercent(income, true);
+    return { cost: actualCost, allowance: Math.min(actualCost, allowance), own: Math.max(0, actualCost - allowance) };
+  }
+
+  function getData(annualGrossExtra = 0) {
+    const partner = $('#hasPartner').checked;
+    const isRijkEmployee = $('#isRijkEmployee').checked;
+    const rijk = isRijkEmployee ? rijkProfile(annualGrossExtra) : null;
+    const kids05 = num('kids05');
+    const kids611 = num('kids611');
+    const kids1215 = num('kids1215');
+    const kids1617 = num('kids1617');
+    const hasYoungChild = kids05 + kids611 > 0;
+    const manualGrossAnnual = num('monthlyGross') * 12 * (1 + num('holidayRate') / 100) + num('annualBonus') + annualGrossExtra;
+    const primaryTaxablePreview = (rijk ? rijk.grossAnnual : manualGrossAnnual) + num('taxableAddition') - (rijk ? rijk.pensionAnnual : num('pensionMonthly') * 12);
+    const partnerTaxablePreview = partner ? num('partnerGross') * 12 * 1.08 - num('partnerPension') * 12 : 0;
+    const iackEligible = $('#iackEligible').checked && hasYoungChild;
+    const primaryGetsIack = iackEligible && (!partner || primaryTaxablePreview < partnerTaxablePreview);
+    const partnerGetsIack = iackEligible && partner && partnerTaxablePreview <= primaryTaxablePreview;
+    const primary = employeeNet(num('monthlyGross'), num('holidayRate'), num('annualBonus') + annualGrossExtra, num('pensionMonthly'), primaryGetsIack, {
+      ...(rijk ? { annualGross: rijk.grossAnnual, annualPension: rijk.pensionAnnual } : {}),
+      taxableAddition: num('taxableAddition'),
+      netReimbursements: num('netReimbursements'),
+      otherDeductions: num('otherDeductions')
+    });
+    const partnerNet = partner ? employeeNet(num('partnerGross'), 8, 0, num('partnerPension'), partnerGetsIack) : { gross: 0, pension: 0, taxableAddition: 0, reimbursements: 0, deductions: 0, taxable: 0, tax: 0, credits: 0, net: 0, iack: 0 };
+    const householdIncome = Math.max(0, primary.taxable + partnerNet.taxable + signed('incomeAdjustment'));
+    const rentIncome = householdIncome + ($('#isRenter').checked ? num('coResidentIncome') : 0);
+    const assets = num('assets');
+    const care = careAllowance(householdIncome, partner, assets);
+    const kgb = childBudget(householdIncome, partner, assets, kids05, kids611, kids1215, kids1617);
+    const kb = childBenefit(kids05, kids611, kids1215, kids1617);
+    const householdMembers = Math.max(num('householdMembers'), partner ? 2 : 1);
+    const rent = $('#isRenter').checked ? rentAllowance(rentIncome, partner, assets, num('baseRent'), householdMembers, $('#youngRenter').checked, $('#coResidentOverAsset').checked) : 0;
+    const childcareCalc = childcare(householdIncome, $('#hasChildcare').checked, $('#childcareType').value, num('childcareChildren'), num('childcareHours'), num('childcareRate'));
+    const benefits = care + kgb + kb + rent + childcareCalc.allowance;
+    const carePremium = num('carePremium') * 12 * (partner ? 2 : 1);
+    const housingCost = $('#isRenter').checked ? num('baseRent') * 12 : 0;
+    const netWage = primary.net + partnerNet.net;
+    const selectedCosts = carePremium + housingCost + childcareCalc.cost;
+    const netIncludingBenefits = netWage + benefits;
+    const disposable = netIncludingBenefits - selectedCosts;
+    return { partner, isRijkEmployee, rijk, primary, partnerNet, householdIncome, rentIncome, care, kgb, kb, rent, childcare: childcareCalc, benefits, carePremium, housingCost, selectedCosts, netWage, netIncludingBenefits, disposable, kids: kids05 + kids611 + kids1215 + kids1617 };
+  }
+
+  function row(label, amount, max, type = '') {
+    const width = Math.max(2, Math.min(100, Math.abs(amount) / max * 100));
+    const sign = amount > 0 && type === 'positive' ? '+' : amount < 0 ? '−' : '';
+    return `<div class="flow-row ${type}"><span>${label}</span><span class="flow-track"><i style="width:${width}%"></i></span><strong>${sign}${euro.format(Math.abs(amount))}</strong></div>`;
+  }
+
+  function render() {
+    const d = getData();
+    const month = value => value / 12;
+    if (d.rijk) {
+      $('#rijkSalaryPreview').textContent = `${euroPrecise.format(d.rijk.salaryJuly)}/mnd`;
+      $('#rijkIkbPreview').textContent = `${euroPrecise.format(d.rijk.ikbAverageMonthly)}/mnd`;
+      $('#rijkPensionPreview').textContent = `${euroPrecise.format(month(d.rijk.pensionAnnual))}/mnd`;
+      $('#rijkCaoPreview').textContent = euro.format(d.rijk.caoPayment);
+    }
+    $('#disposableMonthly').textContent = euro.format(month(d.disposable));
+    $('#netWageMonthly').textContent = euro.format(month(d.netWage));
+    $('#benefitsMonthly').textContent = euro.format(month(d.care + d.kgb + d.kb + d.rent + d.childcare.allowance));
+    $('#selectedCostsMonthly').textContent = d.selectedCosts ? `−${euro.format(month(d.selectedCosts))}` : euro.format(0);
+    $('#annualDisposable').textContent = `${euro.format(d.disposable)} per jaar`;
+    $('#resultSummary').textContent = `${d.rijk ? `schaal ${d.rijk.scale}, trede ${d.rijk.step}, ${d.rijk.hours} uur — ` : ''}na belasting, pensioen, ${d.partner ? '2 zorgpremies' : 'zorgpremie'}${d.housingCost ? ', huur' : ''}${d.childcare.cost ? ' en opvang' : ''}`;
+
+    const grossMonth = month(d.primary.gross + d.partnerNet.gross);
+    const max = Math.max(grossMonth, 1);
+    const grossRows = d.rijk ? [
+      row(d.partner ? 'Salaris huishouden' : 'CAO-salaris', month(d.rijk.salaryAnnual + d.partnerNet.gross), max),
+      row('IKB', month(d.rijk.ikbAnnual), max, 'positive'),
+      ...(d.rijk.caoPayment ? [row('CAO-uitkering 2026', month(d.rijk.caoPayment), max, 'positive')] : []),
+      ...(d.rijk.otherGross ? [row('Overige toelagen', month(d.rijk.otherGross), max, 'positive')] : [])
+    ] : [row('Bruto loon', grossMonth, max)];
+    $('#flowRows').innerHTML = [
+      ...grossRows,
+      ...(d.primary.reimbursements ? [row('Netto vergoedingen', month(d.primary.reimbursements), max, 'positive')] : []),
+      row('Belasting', -month(d.primary.tax + d.partnerNet.tax), max, 'negative'),
+      row('Pensioen', -month(d.primary.pension + d.partnerNet.pension), max, 'negative'),
+      ...(d.primary.deductions ? [row('Overige inhoudingen', -month(d.primary.deductions), max, 'negative')] : []),
+      row('Zorgpremie', -month(d.carePremium), max, 'negative'),
+      row('Regelingen', month(d.care + d.kgb + d.kb + d.rent), max, 'positive'),
+      ...(d.housingCost ? [row('Kale huur', -month(d.housingCost), max, 'negative')] : []),
+      ...(d.childcare.cost ? [row('Opvangkosten', -month(d.childcare.cost), max, 'negative')] : []),
+      ...(d.childcare.allowance ? [row('Opvangtoeslag', month(d.childcare.allowance), max, 'positive')] : [])
+    ].join('');
+
+    const extra = getData(100);
+    const kept = Math.max(-50, Math.min(100, extra.disposable - d.disposable));
+    $('#extraKeeps').textContent = euroPrecise.format(kept);
+    $('#pressureMeter').style.width = `${Math.max(0, Math.min(100, kept))}%`;
+    $('#pressureText').textContent = kept >= 0
+      ? `${euroPrecise.format(100 - kept)} gaat naar belasting, premies of lagere toeslagen.`
+      : `Let op: door afbouw of een grens daalt het besteedbaar inkomen in deze schatting.`;
+
+    const allowances = [
+      ['Zorgtoeslag', d.care], ['Huurtoeslag', d.rent], ['Kindgebonden budget', d.kgb],
+      ['Kinderbijslag', d.kb], ['Kinderopvangtoeslag', d.childcare.allowance],
+      ['Combinatiekorting', d.primary.iack + d.partnerNet.iack]
+    ];
+    $('#allowanceList').innerHTML = allowances.map(([label, value]) =>
+      `<li class="${value ? '' : 'off'}"><span>${label}</span><span>${value ? euro.format(month(value)) + '/mnd' : 'niet van toepassing'}</span></li>`
+    ).join('');
+    window.latestCalculation = d;
+  }
+
+  function syncConditional() {
+    const isRijkEmployee = $('#isRijkEmployee').checked;
+    $('#rijkFields').hidden = !isRijkEmployee;
+    $('#manualIncomeFields').hidden = isRijkEmployee;
+    $('#partnerFields').hidden = !$('#hasPartner').checked;
+    $('#rentFields').hidden = !$('#isRenter').checked;
+    $('#childcareFields').hidden = !$('#hasChildcare').checked;
+  }
+
+  function applyScenario(name) {
+    const values = scenarios[name];
+    Object.entries(values).forEach(([key, value]) => {
+      const el = $(`#${key}`);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = Boolean(value);
+      else el.value = value;
+    });
+    syncConditional();
+    render();
+  }
+
+  $$('.section-toggle').forEach(button => button.addEventListener('click', () => {
+    const body = button.closest('.form-section').querySelector('.section-body');
+    const willOpen = body.hidden;
+    body.hidden = !willOpen;
+    button.setAttribute('aria-expanded', String(willOpen));
+    button.lastElementChild.textContent = willOpen ? '−' : '+';
+  }));
+
+  $('#incomeForm').addEventListener('input', () => { syncConditional(); render(); });
+  $('#incomeForm').addEventListener('change', () => { syncConditional(); render(); });
+  $$('.scenario-row button').forEach(button => button.addEventListener('click', () => applyScenario(button.dataset.scenario)));
+  $('#resetButton').addEventListener('click', () => { $('#incomeForm').reset(); syncConditional(); render(); });
+
+  const methodHtml = `
+    <h2>Zo rekenen we</h2>
+    <p>De tool rekent kalenderjaar 2026 op jaarbasis door en toont daarna een maandgemiddelde. Het moment waarop je IKB laat uitbetalen verandert daarom het jaarresultaat niet.</p>
+    <h3>CAO Rijk, IKB en cao-uitkering</h3>
+    <p>Het salaris volgt schaal en salarisnummer uit § 6.3 CAO Rijk. Voor januari tot en met juni geldt de oude tabel; vanaf juli geldt de 2,7% hogere tabel. Het IKB is 16,50% met het naar arbeidsduur herleide minimum van €440 respectievelijk €452 per maand. Wie op 1 augustus in dienst is krijgt de eenmalige cao-uitkering naar schaal en arbeidsduur; die uitkering is niet pensioengevend.</p>
+    <h3>ABP-werknemerspremie</h3>
+    <p>De reguliere eigen bijdrage bestaat uit 8,13% OP/NP over het pensioengevend inkomen minus €19.200 en 0,21% AOP voor sector Rijk boven €29.700. De deeltijdfactor is uren gedeeld door 36. Voor OP/NP geldt het fiscale maximum van €137.800. De berekening gebruikt het pensioengevend inkomen op 1 januari 2026.</p>
+    <h3>Belasting en netto loon</h3>
+    <p>Het belastbare loon wordt verminderd met de werknemerspremie voor pensioen en verhoogd met een eventuele fiscale bijtelling. Daarna passen we de box-1-tarieven 2026, algemene heffingskorting, arbeidskorting en — indien van toepassing — inkomensafhankelijke combinatiekorting toe.</p>
+    <h3>Huishoudregelingen</h3>
+    <p>Voor zorgtoeslag, huurtoeslag, kindgebonden budget en kinderopvangtoeslag telt het gezamenlijke toetsingsinkomen. De afzonderlijke correctie maakt het mogelijk verschillen met het fiscale loon te verwerken. Alleen bij de huurtoeslag wordt daarnaast het ingevulde meetellende inkomen van medebewoners toegevoegd.</p>
+    <h3>Bewuste grenzen</h3>
+    <p>De huurtoeslag volgt de lineaire formule uit artikel 21 Wht: maximaal recht minus 27% (eenpersoon) of 22% (meerpersoon) van het inkomen boven het minimum-inkomensijkpunt. De kinderopvangtoeslag volgt per inkomensklasse de tabel in bijlage I bij het Besluit kinderopvangtoeslag. Bijzondere rechtsregels en uitzonderingen blijven buiten deze publieksroute.</p>`;
+
+  const sourcesHtml = `
+    <h2>Juridische grondslag 2026</h2>
+    <p>Primaire wetgeving is het uitgangspunt. Gedelegeerde regelgeving en officiële bekendmakingen leveren de voor 2026 geldende bedragen en tabellen. Laatst inhoudelijk gecontroleerd: 14 oktober 2026.</p>
+    <h3>Wetten</h3>
+    <ul>
+      <li><a href="https://wetten.overheid.nl/BWBR0011353/2026-01-01" target="_blank" rel="noreferrer">Wet inkomstenbelasting 2001</a> — box 1 en heffingskortingen</li>
+      <li><a href="https://wetten.overheid.nl/BWBR0018472/2026-01-01" target="_blank" rel="noreferrer">Algemene wet inkomensafhankelijke regelingen</a> — partner, toetsingsinkomen en vermogen</li>
+      <li><a href="https://wetten.overheid.nl/BWBR0018451/2026-01-01" target="_blank" rel="noreferrer">Wet op de zorgtoeslag</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0008659/2026-01-01" target="_blank" rel="noreferrer">Wet op de huurtoeslag</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0017017/2026-01-01" target="_blank" rel="noreferrer">Wet kinderopvang</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0022751/2026-01-01" target="_blank" rel="noreferrer">Wet op het kindgebonden budget</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0002368/2026-01-01" target="_blank" rel="noreferrer">Algemene Kinderbijslagwet</a></li>
+    </ul>
+    <h3>Uitwerking en 2026-bedragen</h3>
+    <ul>
+      <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-6/6-3-de-salarisschalen-en-maandbedragen-per-1-juli-2026" target="_blank" rel="noreferrer">CAO Rijk § 6.3 — salarisschalen per 1 juli 2026</a></li>
+      <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-9/individueel-keuzebudget" target="_blank" rel="noreferrer">CAO Rijk § 9.1 — Individueel Keuzebudget</a></li>
+      <li><a href="https://www.caorijk.nl/site/binaries/site-content/collections/documents/2026/04/30/onderhandelingsresultaat-cao-rijk-2026/onderhandelingsresultaat-cao-rijk-2026-van-30-april-2026.pdf" target="_blank" rel="noreferrer">CAO Rijk 2026 — loonstijging en eenmalige uitkering</a></li>
+      <li><a href="https://www.abp.nl/content/dam/abp/documenten/formulieren-tabellen/premietabel-2026.pdf" target="_blank" rel="noreferrer">ABP Premietabel 2026 — percentages en franchises</a></li>
+      <li><a href="https://www.abp.nl/content/dam/abp/documenten/juridisch/pensioenreglement-burgers-2026.pdf" target="_blank" rel="noreferrer">Pensioenreglement ABP voor burgers 2026</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0030989/2026-01-01" target="_blank" rel="noreferrer">Besluit percentages drempel- en toetsingsinkomen zorgtoeslag</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0051838/2026-01-01" target="_blank" rel="noreferrer">Regeling standaardpremie 2026</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0051841/2026-01-01" target="_blank" rel="noreferrer">Regeling huurtoeslaggrenzen 2026</a></li>
+      <li><a href="https://wetten.overheid.nl/BWBR0017321/2026-01-01" target="_blank" rel="noreferrer">Besluit kinderopvangtoeslag, inclusief tabel 2026</a></li>
+      <li><a href="https://zoek.officielebekendmakingen.nl/stcrt-2025-43553.html" target="_blank" rel="noreferrer">Staatscourant 2025, 43553 — geïndexeerde Wkb-bedragen</a></li>
+      <li><a href="https://zoek.officielebekendmakingen.nl/stcrt-2025-44508.html" target="_blank" rel="noreferrer">Staatscourant 2025, 44508 — AKW-bedragen per 1 januari 2026</a></li>
+      <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/nl/toeslagen/content/hulpmiddel-proefberekening-toeslagen" target="_blank" rel="noreferrer">Officiële proefberekening toeslagen</a></li>
+    </ul>
+    <p><strong>Niet meegenomen:</strong> een schaal-, trede- of urenwijziging tijdens 2026, PAS, verlof met afwijkende premieverdeling, pensioenovergangsrecht, verkoop van IKB-uren, eigen woning, box 2/3-belasting, alimentatie en gemeentelijke regelingen. Pensioengevende toelagen op de peildatum kun je wel invoeren.</p>`;
+
+  const modal = $('#infoModal');
+  $$('[data-open-modal]').forEach(button => button.addEventListener('click', () => {
+    const sources = button.dataset.openModal === 'sources';
+    $('#modalKicker').textContent = sources ? 'Bronnen & actualiteit' : 'Berekeningswijze';
+    $('#modalContent').innerHTML = sources ? sourcesHtml : methodHtml;
+    modal.showModal();
+  }));
+  $('#closeModal').addEventListener('click', () => modal.close());
+  modal.addEventListener('click', event => { if (event.target === modal) modal.close(); });
+
+  $('#copyResult').addEventListener('click', async () => {
+    const d = window.latestCalculation;
+    const rijkLines = d.rijk ? `\nCAO Rijk: schaal ${d.rijk.scale}, trede ${d.rijk.step}, ${d.rijk.hours} uur\nIKB gemiddeld: ${euroPrecise.format(d.rijk.ikbAverageMonthly)} per maand\nABP eigen bijdrage: ${euroPrecise.format(d.rijk.pensionAnnual / 12)} per maand` : '';
+    const text = `NettoInzicht 2026${rijkLines}\nOver na gekozen vaste posten: ${euro.format(d.disposable / 12)} per maand\nNetto loon huishouden: ${euro.format(d.netWage / 12)} per maand\nRegelingen en kinderbijslag: ${euro.format(d.benefits / 12)} per maand\nZorg, huur en opvang: ${euro.format(d.selectedCosts / 12)} per maand\nIndicatieve uitkomst; controleer je loonstrook en officiële beschikkingen.`;
+    try { await navigator.clipboard.writeText(text); }
+    catch { /* Clipboard kan in sommige previews geblokkeerd zijn. */ }
+    const toast = $('#toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  });
+
+  syncConditional();
+  render();
+})();
