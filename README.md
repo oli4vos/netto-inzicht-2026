@@ -16,6 +16,11 @@ Open-source rekentool voor medewerkers van de Belastingdienst en andere onderdel
 - kindgebonden budget en kinderbijslag;
 - kinderopvangtoeslag;
 - pensioeninhouding, fiscale bijtelling, netto vergoedingen en overige looninhoudingen;
+- planning van extra uren per kalenderweek;
+- betaald meer uren werken volgens CAO Rijk § 9.2, inclusief 16,50% IKB;
+- overwerk volgens CAO Rijk § 7.7, met onderscheid tussen geldvergoeding en compensatieverlof;
+- netto-opbrengst per extra uur na de correctie van jaarbelasting en toeslagen;
+- een uitvouwbare jaarafrekening en uitleg over de gevolgen voor ABP-pensioen;
 - het effect van €100 extra bruto jaarloon.
 
 De uitkomst is een indicatie op jaarbasis, omgerekend naar een maandgemiddelde. De tool vervangt geen loonstrook, toeslagenbeschikking of persoonlijk fiscaal advies.
@@ -31,7 +36,7 @@ Primaire wetgeving is het uitgangspunt voor belasting en toeslagen. Voor arbeids
 - Wet kinderopvang;
 - Wet op het kindgebonden budget;
 - Algemene Kinderbijslagwet.
-- CAO Rijk §§ 3.1, 6.3 en 9.1;
+- CAO Rijk §§ 3.2, 6.3, 7.7, 9.1 en 9.2;
 - onderhandelingsresultaat CAO Rijk 2026;
 - Pensioenreglement ABP voor burgers 2026;
 - ABP Premietabel 2026.

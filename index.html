@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Bereken als medewerker van de Belastingdienst je netto huishoudinkomen in 2026 vanuit CAO Rijk-schaal, trede, uren, IKB en ABP-pensioen.">
+  <meta name="description" content="Bereken als medewerker van de Belastingdienst je netto huishoudinkomen én wat geplande extra uren in 2026 werkelijk opleveren, inclusief IKB, belasting, toeslagen en ABP-pensioen.">
   <meta name="theme-color" content="#f2efe8">
   <title>NettoInzicht Rijk 2026 — van salarisschaal naar netto</title>
   <link rel="stylesheet" href="styles.css">
@@ -27,7 +27,7 @@
       <div class="eyebrow"><span>01</span> Voor medewerkers van de Belastingdienst</div>
       <h1 id="hero-title">Van schaal naar<br><em>écht</em> netto.</h1>
       <div class="hero-side">
-        <p>Kies je CAO Rijk-schaal, trede en uren. De tool verwerkt IKB, de eenmalige cao-uitkering, ABP-pensioen, belasting en toeslagen in één maandgemiddelde.</p>
+        <p>Kies je CAO Rijk-schaal, trede en uren. Plan daarna per week je extra uren en zie wat daarvan netto overblijft — inclusief IKB, belasting, toeslagen en pensioen.</p>
         <a class="primary-link" href="#calculator">Start je berekening <span aria-hidden="true">↘</span></a>
       </div>
     </section>
@@ -35,7 +35,7 @@
     <section class="trust-row" aria-label="Kenmerken">
       <span>CAO Rijk per 1 juli 2026</span>
       <span>ABP-premies 2026</span>
-      <span>36 uur is voltijd</span>
+      <span>Extra uren per week plannen</span>
       <span>Alles blijft in je browser</span>
     </section>
 
@@ -167,10 +167,70 @@
             </div>
           </fieldset>
 
+          <fieldset class="form-section open" id="extraHoursSection">
+            <legend>
+              <button class="section-toggle" type="button" aria-expanded="true">
+                <span><b>2</b> Extra uren</span><span aria-hidden="true">−</span>
+              </button>
+            </legend>
+            <div class="section-body">
+              <label class="switch-row extra-hours-switch">
+                <span><strong>Ik verwacht extra uren te werken</strong><small>Plan per week en zie het netto jaarresultaat</small></span>
+                <input id="planExtraHours" name="planExtraHours" type="checkbox" role="switch"><i aria-hidden="true"></i>
+              </label>
+
+              <div class="conditional extra-hours-fields" id="extraHoursFields" hidden>
+                <div class="field">
+                  <label for="extraHoursRoute">Welke afspraak maak je?</label>
+                  <select id="extraHoursRoute" name="extraHoursRoute">
+                    <option value="paid-more">Betaald meer uren werken — vooraf afgesproken</option>
+                    <option value="overtime">Overwerk — op verzoek buiten je arbeidspatroon</option>
+                  </select>
+                </div>
+
+                <div class="route-explainer" id="extraRouteExplainer"></div>
+
+                <div class="field-grid extra-settings">
+                  <div class="field">
+                    <label for="extraSalaryPeriod">Salaris voor de uurwaarde</label>
+                    <select id="extraSalaryPeriod" name="extraSalaryPeriod">
+                      <option value="july" selected>Vanaf 1 juli 2026</option>
+                      <option value="january">Januari t/m juni 2026</option>
+                    </select>
+                  </div>
+                  <div class="field overtime-only" id="overtimePayoutField" hidden>
+                    <label for="overtimeTimePayout">Compensatie-uren</label>
+                    <select id="overtimeTimePayout" name="overtimeTimePayout">
+                      <option value="leave" selected>Als verlof opnemen</option>
+                      <option value="cash">Ook uitbetaald door werkgever</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="week-planner">
+                  <div class="week-planner-head">
+                    <div>
+                      <span class="micro-label">Planning 2026</span>
+                      <strong><span id="extraHoursTotal">0</span> uur ingepland</strong>
+                    </div>
+                    <button id="addExtraWeek" class="add-week-button" type="button">+ week</button>
+                  </div>
+                  <div class="week-column-labels" aria-hidden="true">
+                    <span>Week</span><span>Uren</span><span class="overtime-only">Moment</span><span></span>
+                  </div>
+                  <div id="extraHoursRows" class="extra-hours-rows"></div>
+                </div>
+
+                <div id="extraHoursValidation" class="inline-message" role="status"></div>
+                <p class="field-note">De planner corrigeert het volledige jaarinkomen. Daardoor zie je niet alleen de inhouding op de loonstrook, maar ook de uiteindelijke belasting en verandering van toeslagen over 2026.</p>
+              </div>
+            </div>
+          </fieldset>
+
           <fieldset class="form-section">
             <legend>
               <button class="section-toggle" type="button" aria-expanded="false">
-                <span><b>2</b> Wonen & vermogen</span><span aria-hidden="true">+</span>
+                <span><b>3</b> Wonen & vermogen</span><span aria-hidden="true">+</span>
               </button>
             </legend>
             <div class="section-body" hidden>
@@ -207,7 +267,7 @@
           <fieldset class="form-section">
             <legend>
               <button class="section-toggle" type="button" aria-expanded="false">
-                <span><b>3</b> Kinderen & opvang</span><span aria-hidden="true">+</span>
+                <span><b>4</b> Kinderen & opvang</span><span aria-hidden="true">+</span>
               </button>
             </legend>
             <div class="section-body" hidden>
@@ -257,6 +317,48 @@
           <div><span>Netto loon huishouden</span><strong id="netWageMonthly">€ 0</strong></div>
           <div><span>Regelingen & kinderbijslag</span><strong id="benefitsMonthly">€ 0</strong></div>
           <div><span>Zorg, huur & opvang</span><strong id="selectedCostsMonthly">€ 0</strong></div>
+        </div>
+
+        <div class="result-card extra-result-card" id="extraHoursResultCard">
+          <div class="card-title-row">
+            <h3>Wat leveren extra uren op?</h3>
+            <span id="extraHoursResultBadge">nog niet gepland</span>
+          </div>
+          <div class="extra-result-empty" id="extraHoursEmpty">
+            <strong>Plan je weken links.</strong>
+            <p>Je ziet hier straks het netto resultaat per uur én de correctie van je volledige jaarinkomen.</p>
+          </div>
+          <div id="extraHoursResult" hidden>
+            <div class="extra-result-hero">
+              <div>
+                <span>Netto over van deze uren</span>
+                <strong id="extraHoursNet">€ 0</strong>
+                <small id="extraHoursPerHour">€ 0 per gewerkt uur</small>
+              </div>
+              <div class="retention-ring" id="extraRetentionRing"><span id="extraRetentionPercent">0%</span><small>van bruto</small></div>
+            </div>
+            <div class="extra-result-stats">
+              <div><span>Uren</span><strong id="extraResultHours">0</strong></div>
+              <div><span>Bruto uitbetaling</span><strong id="extraResultGross">€ 0</strong></div>
+              <div><span>Belastbaar jaarloon na correctie</span><strong id="extraResultAnnualIncome">€ 0</strong></div>
+              <div><span id="extraTimeLabel">Compensatieverlof</span><strong id="extraTimeValue">0 uur</strong></div>
+            </div>
+
+            <div class="extra-result-note" id="extraResultNote"></div>
+
+            <details class="calculation-details">
+              <summary><span>Volledige doorrekening</span><span>open</span></summary>
+              <div id="extraBreakdown" class="breakdown-list"></div>
+            </details>
+            <details class="calculation-details">
+              <summary><span>Zo werkt pensioen bij deze uren</span><span>open</span></summary>
+              <div class="detail-copy" id="extraPensionExplanation"></div>
+            </details>
+            <details class="calculation-details">
+              <summary><span>Planning per week</span><span>open</span></summary>
+              <div id="extraWeekSummary" class="week-summary"></div>
+            </details>
+          </div>
         </div>
 
         <div class="result-card flow-card">

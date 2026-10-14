@@ -5,6 +5,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   const euroPrecise = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const oneDecimal = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
   const num = id => Math.max(0, Number($(`#${id}`).value) || 0);
   const signed = id => Number($(`#${id}`).value) || 0;
 
@@ -79,9 +80,9 @@
   ];
 
   const scenarios = {
-    starter: { isRijkEmployee: true, rijkScale: 8, rijkStep: 2, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 40, otherDeductions: 0, incomeAdjustment: 0, hasPartner: false, isRenter: true, baseRent: 725, householdMembers: 1, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 7000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false },
-    family: { isRijkEmployee: true, rijkScale: 10, rijkStep: 5, rijkHours: 32, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 80, otherDeductions: 15, incomeAdjustment: 0, hasPartner: true, partnerGross: 2550, partnerPension: 90, isRenter: true, baseRent: 910, householdMembers: 4, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 15000, kids05: 1, kids611: 1, kids1215: 0, kids1617: 0, iackEligible: true, hasChildcare: true, childcareType: 'daycare', childcareChildren: 1, childcareHours: 96, childcareRate: 11.65 },
-    couple: { isRijkEmployee: true, rijkScale: 12, rijkStep: 8, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, annualBonus: 0, carePremium: 159, taxableAddition: 7200, netReimbursements: 50, otherDeductions: 60, incomeAdjustment: 0, hasPartner: true, partnerGross: 3600, partnerPension: 140, isRenter: false, assets: 32000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false }
+    starter: { isRijkEmployee: true, rijkScale: 8, rijkStep: 2, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 40, otherDeductions: 0, incomeAdjustment: 0, hasPartner: false, isRenter: true, baseRent: 725, householdMembers: 1, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 7000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false },
+    family: { isRijkEmployee: true, rijkScale: 10, rijkStep: 5, rijkHours: 32, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 80, otherDeductions: 15, incomeAdjustment: 0, hasPartner: true, partnerGross: 2550, partnerPension: 90, isRenter: true, baseRent: 910, householdMembers: 4, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 15000, kids05: 1, kids611: 1, kids1215: 0, kids1617: 0, iackEligible: true, hasChildcare: true, childcareType: 'daycare', childcareChildren: 1, childcareHours: 96, childcareRate: 11.65 },
+    couple: { isRijkEmployee: true, rijkScale: 12, rijkStep: 8, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 7200, netReimbursements: 50, otherDeductions: 60, incomeAdjustment: 0, hasPartner: true, partnerGross: 3600, partnerPension: 140, isRenter: false, assets: 32000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false }
   };
 
   function progressiveTax(income) {
@@ -154,6 +155,83 @@
       ikbAverageMonthly: ikbAnnual / 12,
       pensionableFulltime, opnpContribution, aopContribution, pensionAnnual,
       grossAnnual: salaryAnnual + ikbAnnual + caoPayment + otherGross
+    };
+  }
+
+  function isoWeek(date) {
+    const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    utc.setUTCDate(utc.getUTCDate() + 4 - (utc.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+    return Math.ceil((((utc - yearStart) / 86400000) + 1) / 7);
+  }
+
+  const initialExtraWeek = Math.min(53, Math.max(1, isoWeek(new Date())));
+  let extraHourRowCounter = 0;
+
+  function addExtraHoursRow(week = initialExtraWeek, hours = 4, band = .25) {
+    extraHourRowCounter += 1;
+    const weekOptions = Array.from({ length: 53 }, (_, index) => {
+      const value = index + 1;
+      return `<option value="${value}"${value === Number(week) ? ' selected' : ''}>Week ${value}</option>`;
+    }).join('');
+    const row = document.createElement('div');
+    row.className = 'extra-hours-row';
+    row.dataset.rowId = String(extraHourRowCounter);
+    row.innerHTML = `
+      <label><span class="sr-only">Week</span><select class="extra-week" aria-label="Week">${weekOptions}</select></label>
+      <label><span class="sr-only">Aantal extra uren</span><div class="suffix-input"><input class="extra-week-hours" type="number" min="0" max="40" step="0.25" value="${hours}" inputmode="decimal" aria-label="Aantal extra uren"><span>uur</span></div></label>
+      <label class="overtime-only"><span class="sr-only">Moment van overwerk</span><select class="extra-week-band" aria-label="Moment van overwerk">
+        <option value="0.25"${Number(band) === .25 ? ' selected' : ''}>Werkdag 06–22 · 25%</option>
+        <option value="0.5"${Number(band) === .5 ? ' selected' : ''}>Nacht/weekend · 50%</option>
+        <option value="1"${Number(band) === 1 ? ' selected' : ''}>Weekendnacht/feestdag · 100%</option>
+      </select></label>
+      <button class="remove-week-button" type="button" aria-label="Verwijder deze week">×</button>`;
+    $('#extraHoursRows').append(row);
+    syncExtraHoursRoute();
+  }
+
+  function readExtraHoursRows() {
+    return $$('.extra-hours-row').map(row => ({
+      week: Math.min(53, Math.max(1, Number($('.extra-week', row).value) || 1)),
+      hours: Math.max(0, Number($('.extra-week-hours', row).value) || 0),
+      rate: Number($('.extra-week-band', row).value) || .25
+    })).filter(entry => entry.hours > 0);
+  }
+
+  function extraHoursProfile() {
+    const enabled = $('#planExtraHours').checked;
+    const route = $('#extraHoursRoute').value;
+    const entries = readExtraHoursRows();
+    const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+    const rijk = $('#isRijkEmployee').checked ? rijkProfile() : null;
+    const salaryPeriod = $('#extraSalaryPeriod').value;
+    const salaryFulltime = rijk ? (salaryPeriod === 'january' ? rijk.salaryJanuaryFulltime : rijk.salaryJulyFulltime) : 0;
+    const hourlySalary = salaryFulltime / 156;
+    const overtimeEligible = Boolean(rijk && rijk.scale <= 10);
+    const timePaidOut = $('#overtimeTimePayout').value === 'cash';
+    const paidMoreBase = hours * hourlySalary;
+    const ikb = route === 'paid-more' ? paidMoreBase * RIJK.ikbRate : 0;
+    const overtimePremium = route === 'overtime' && overtimeEligible
+      ? entries.reduce((sum, entry) => sum + entry.hours * hourlySalary * entry.rate, 0)
+      : 0;
+    const overtimeBase = route === 'overtime' && overtimeEligible && timePaidOut ? hours * hourlySalary : 0;
+    const grossCash = !enabled || !rijk ? 0 : route === 'paid-more'
+      ? paidMoreBase + ikb
+      : overtimeBase + overtimePremium;
+    const leaveHours = enabled && route === 'overtime' && overtimeEligible && !timePaidOut ? hours : 0;
+    const annualLimit = rijk ? 100 * rijk.factor : 0;
+    const weekTotals = entries.reduce((totals, entry) => {
+      totals[entry.week] = (totals[entry.week] || 0) + entry.hours;
+      return totals;
+    }, {});
+    const weeksOverForty = rijk
+      ? Object.entries(weekTotals).filter(([, weekHours]) => rijk.hours + weekHours > 40).map(([week]) => Number(week))
+      : [];
+
+    return {
+      enabled, route, entries, hours, rijk, salaryPeriod, hourlySalary, paidMoreBase, ikb,
+      overtimePremium, overtimeBase, overtimeEligible, timePaidOut, grossCash, leaveHours,
+      annualLimit, weeksOverForty
     };
   }
 
@@ -265,8 +343,95 @@
     return `<div class="flow-row ${type}"><span>${label}</span><span class="flow-track"><i style="width:${width}%"></i></span><strong>${sign}${euro.format(Math.abs(amount))}</strong></div>`;
   }
 
+  function breakdownRow(label, amount, note = '', type = '') {
+    const sign = amount > 0 && type === 'positive' ? '+' : amount < 0 ? '−' : '';
+    return `<div class="breakdown-row ${type}"><div><span>${label}</span>${note ? `<small>${note}</small>` : ''}</div><strong>${sign}${euroPrecise.format(Math.abs(amount))}</strong></div>`;
+  }
+
+  function renderExtraHours(baseline, withExtra, extra) {
+    const active = extra.enabled && extra.hours > 0;
+    $('#extraHoursTotal').textContent = oneDecimal.format(extra.hours);
+    $('#extraHoursEmpty').hidden = active;
+    $('#extraHoursResult').hidden = !active;
+    $('#extraHoursResultBadge').textContent = active
+      ? `${oneDecimal.format(extra.hours)} uur · ${extra.route === 'paid-more' ? '§ 9.2' : '§ 7.7'}`
+      : 'nog niet gepland';
+
+    const validation = [];
+    if (extra.enabled && !extra.rijk) validation.push('De planner gebruikt de CAO Rijk en is alleen beschikbaar als “Belastingdienst / CAO Rijk” aanstaat.');
+    if (extra.enabled && extra.rijk && extra.route === 'paid-more' && extra.hours > extra.annualLimit) {
+      validation.push(`Je plant ${oneDecimal.format(extra.hours)} uur. De cao-uitleg noemt voor jouw arbeidsduur een jaarmaximum van ${oneDecimal.format(extra.annualLimit)} uur.`);
+    }
+    if (extra.enabled && extra.route === 'paid-more' && extra.weeksOverForty.length) {
+      validation.push(`In week ${extra.weeksOverForty.join(', ')} komt contracttijd plus planning boven 40 uur. De cao begrenst betaald meerwerk op gemiddeld 40 uur; controleer dit met je leidinggevende.`);
+    }
+    if (extra.enabled && extra.route === 'overtime' && !extra.overtimeEligible) {
+      validation.push(`Schaal ${extra.rijk ? extra.rijk.scale : '—'} valt niet onder het standaardrecht op overwerkvergoeding van CAO Rijk § 7.7 (maximaal schaal 10). Een lokale afspraak kan afwijken.`);
+    }
+    $('#extraHoursValidation').innerHTML = validation.map(message => `<p>${message}</p>`).join('');
+    $('#extraHoursValidation').classList.toggle('has-warning', validation.length > 0);
+    if (!active) return;
+
+    const taxBeforeDelta = withExtra.primary.taxBefore - baseline.primary.taxBefore;
+    const creditsDelta = withExtra.primary.credits - baseline.primary.credits;
+    const benefitDelta = withExtra.benefits - baseline.benefits;
+    const netWageDelta = withExtra.netWage - baseline.netWage;
+    const netEffect = withExtra.disposable - baseline.disposable;
+    const perHour = extra.hours ? netEffect / extra.hours : 0;
+    const retention = extra.grossCash ? netEffect / extra.grossCash * 100 : 0;
+    const ringPercent = Math.max(0, Math.min(100, retention));
+
+    $('#extraHoursNet').textContent = euroPrecise.format(netEffect);
+    $('#extraHoursPerHour').textContent = `${euroPrecise.format(perHour)} per gewerkt uur`;
+    $('#extraRetentionPercent').textContent = `${oneDecimal.format(retention)}%`;
+    $('#extraRetentionRing').style.setProperty('--retention', `${ringPercent * 3.6}deg`);
+    $('#extraResultHours').textContent = `${oneDecimal.format(extra.hours)} uur`;
+    $('#extraResultGross').textContent = euroPrecise.format(extra.grossCash);
+    $('#extraResultAnnualIncome').textContent = euro.format(withExtra.primary.taxable);
+    $('#extraTimeLabel').textContent = extra.route === 'overtime' && !extra.timePaidOut ? 'Compensatieverlof' : 'Uurwaarde bruto';
+    $('#extraTimeValue').textContent = extra.route === 'overtime' && !extra.timePaidOut
+      ? `${oneDecimal.format(extra.leaveHours)} uur`
+      : euroPrecise.format(extra.hourlySalary);
+
+    $('#extraResultNote').innerHTML = extra.grossCash > 0
+      ? `<strong>Onder aan de streep:</strong> je gecorrigeerde jaarbeeld stijgt met ${euroPrecise.format(netEffect)}. ${benefitDelta < -.01 ? `Daarin zit ${euroPrecise.format(Math.abs(benefitDelta))} minder aan regelingen.` : 'In dit scenario dalen je regelingen niet.'}`
+      : '<strong>Geen standaard geldvergoeding berekend.</strong> Controleer of voor jou een afwijkende afspraak in het personeelsreglement geldt.';
+
+    const grossRows = extra.route === 'paid-more'
+      ? [
+          breakdownRow('Salaris voor extra uren', extra.paidMoreBase, `${oneDecimal.format(extra.hours)} × ${euroPrecise.format(extra.hourlySalary)}`, 'positive'),
+          breakdownRow('IKB over extra uren', extra.ikb, '16,50% volgens CAO Rijk § 9.2', 'positive')
+        ]
+      : [
+          ...(extra.timePaidOut ? [breakdownRow('Uitbetaling compensatie-uren', extra.overtimeBase, '100% salaris per uur', 'positive')] : []),
+          breakdownRow('Overwerkvergoeding in geld', extra.overtimePremium, '25%, 50% of 100% per gepland moment', 'positive'),
+          ...(!extra.timePaidOut ? [breakdownRow('Waarde verlofuren', 0, `${oneDecimal.format(extra.leaveHours)} uur tijd; niet als geld opgeteld`)] : [])
+        ];
+    $('#extraBreakdown').innerHTML = [
+      ...grossRows,
+      breakdownRow('Belasting vóór kortingen', -taxBeforeDelta, 'marginale box-1-heffing', 'negative'),
+      breakdownRow('Verandering heffingskortingen', creditsDelta, creditsDelta < 0 ? 'minder korting door hoger jaarinkomen' : 'extra korting', creditsDelta >= 0 ? 'positive' : 'negative'),
+      breakdownRow('Netto loon na jaarbelasting', netWageDelta, 'na belasting; geen extra ABP-inhouding in 2026', 'positive'),
+      breakdownRow('Verandering toeslagen en regelingen', benefitDelta, 'zorg, huur, kindgebonden budget en opvang samen', benefitDelta >= 0 ? 'positive' : 'negative'),
+      breakdownRow('Netto over van extra uren', netEffect, `effectief ${euroPrecise.format(perHour)} per uur`, 'total')
+    ].join('');
+
+    $('#extraPensionExplanation').innerHTML = extra.route === 'overtime'
+      ? `<p><strong>Extra ABP-inhouding in deze 2026-berekening: ${euroPrecise.format(0)}.</strong> Het ABP-pensioengevend inkomen voor 2026 is in beginsel op 1 januari vastgesteld. Het ABP-reglement sluit een vergoeding voor variabel overwerk bovendien uit, tenzij in jouw arbeidsrelatie uitdrukkelijk is vastgelegd dat deze wel meetelt.</p><p>De geldvergoeding verhoogt dus wel je fiscale jaarloon en kan toeslagen verlagen, maar levert in het standaardgeval geen extra pensioenopbouw op. Compensatieverlof is tijd en geen extra uitbetaling.</p>`
+      : `<p><strong>Extra ABP-inhouding in deze 2026-berekening: ${euroPrecise.format(0)}.</strong> Je contractomvang blijft bij betaald meer uren werken gelijk. Onder de ABP-peildatumsystematiek is het pensioengevend inkomen voor 2026 in beginsel op 1 januari vastgesteld.</p><p>De openbare CAO-tekst van § 9.2 noemt salaris per uur plus 16,50% IKB, maar kwalificeert deze betaling niet afzonderlijk als pensioengevend. Controleer daarom op je loonstrook of werkgever of dit als pensioengevend variabel inkomen wordt aangeleverd; een eventuele werking ligt niet als extra premie in deze 2026-afrekening.</p>`;
+
+    $('#extraWeekSummary').innerHTML = extra.entries.map(entry => {
+      const rate = extra.route === 'paid-more' ? 1 + RIJK.ikbRate : extra.overtimeEligible ? (extra.timePaidOut ? 1 : 0) + entry.rate : 0;
+      const gross = entry.hours * extra.hourlySalary * rate;
+      const moment = extra.route === 'paid-more' ? 'salaris + 16,50% IKB' : `${Math.round(entry.rate * 100)}% geldvergoeding${extra.timePaidOut ? ' + uur uitbetaald' : ' + uur verlof'}`;
+      return `<div><span>Week ${entry.week}<small>${oneDecimal.format(entry.hours)} uur · ${moment}</small></span><strong>${euroPrecise.format(gross)}</strong></div>`;
+    }).join('');
+  }
+
   function render() {
-    const d = getData();
+    const extraHours = extraHoursProfile();
+    const baseline = getData();
+    const d = getData(extraHours.grossCash);
     const month = value => value / 12;
     if (d.rijk) {
       $('#rijkSalaryPreview').textContent = `${euroPrecise.format(d.rijk.salaryJuly)}/mnd`;
@@ -283,11 +448,13 @@
 
     const grossMonth = month(d.primary.gross + d.partnerNet.gross);
     const max = Math.max(grossMonth, 1);
+    const otherGrossWithoutExtraHours = d.rijk ? Math.max(0, d.rijk.otherGross - extraHours.grossCash) : 0;
     const grossRows = d.rijk ? [
       row(d.partner ? 'Salaris huishouden' : 'CAO-salaris', month(d.rijk.salaryAnnual + d.partnerNet.gross), max),
       row('IKB', month(d.rijk.ikbAnnual), max, 'positive'),
       ...(d.rijk.caoPayment ? [row('CAO-uitkering 2026', month(d.rijk.caoPayment), max, 'positive')] : []),
-      ...(d.rijk.otherGross ? [row('Overige toelagen', month(d.rijk.otherGross), max, 'positive')] : [])
+      ...(otherGrossWithoutExtraHours ? [row('Overige toelagen', month(otherGrossWithoutExtraHours), max, 'positive')] : []),
+      ...(extraHours.grossCash ? [row('Uitbetaling extra uren', month(extraHours.grossCash), max, 'positive')] : [])
     ] : [row('Bruto loon', grossMonth, max)];
     $('#flowRows').innerHTML = [
       ...grossRows,
@@ -302,7 +469,9 @@
       ...(d.childcare.allowance ? [row('Opvangtoeslag', month(d.childcare.allowance), max, 'positive')] : [])
     ].join('');
 
-    const extra = getData(100);
+    renderExtraHours(baseline, d, extraHours);
+
+    const extra = getData(extraHours.grossCash + 100);
     const kept = Math.max(-50, Math.min(100, extra.disposable - d.disposable));
     $('#extraKeeps').textContent = euroPrecise.format(kept);
     $('#pressureMeter').style.width = `${Math.max(0, Math.min(100, kept))}%`;
@@ -325,9 +494,19 @@
     const isRijkEmployee = $('#isRijkEmployee').checked;
     $('#rijkFields').hidden = !isRijkEmployee;
     $('#manualIncomeFields').hidden = isRijkEmployee;
+    $('#extraHoursFields').hidden = !$('#planExtraHours').checked;
     $('#partnerFields').hidden = !$('#hasPartner').checked;
     $('#rentFields').hidden = !$('#isRenter').checked;
     $('#childcareFields').hidden = !$('#hasChildcare').checked;
+    syncExtraHoursRoute();
+  }
+
+  function syncExtraHoursRoute() {
+    const overtime = $('#extraHoursRoute').value === 'overtime';
+    $$('.overtime-only').forEach(element => { element.hidden = !overtime; });
+    $('#extraRouteExplainer').innerHTML = overtime
+      ? '<strong>Overwerk op verzoek</strong><p>Je krijgt normaal hetzelfde aantal uren als verlof én 25%, 50% of 100% van je salaris per uur in geld. Alleen als je werkgever de verlofuren laat uitbetalen, komt daar 100% uurloon bij. Het standaardrecht geldt tot en met schaal 10.</p>'
+      : '<strong>Vooraf betaald meer werken</strong><p>Je vraagt vooraf toestemming. Ieder uur wordt uitbetaald tegen je salaris per uur plus 16,50% IKB. Je contracturen veranderen niet.</p>';
   }
 
   function applyScenario(name) {
@@ -352,8 +531,27 @@
 
   $('#incomeForm').addEventListener('input', () => { syncConditional(); render(); });
   $('#incomeForm').addEventListener('change', () => { syncConditional(); render(); });
+  $('#addExtraWeek').addEventListener('click', () => {
+    const entries = readExtraHoursRows();
+    const nextWeek = entries.length ? Math.min(53, entries[entries.length - 1].week + 1) : initialExtraWeek;
+    addExtraHoursRow(nextWeek, 4, .25);
+    render();
+  });
+  $('#extraHoursRows').addEventListener('click', event => {
+    const button = event.target.closest('.remove-week-button');
+    if (!button) return;
+    button.closest('.extra-hours-row').remove();
+    if (!$('.extra-hours-row')) addExtraHoursRow(initialExtraWeek, 4, .25);
+    render();
+  });
   $$('.scenario-row button').forEach(button => button.addEventListener('click', () => applyScenario(button.dataset.scenario)));
-  $('#resetButton').addEventListener('click', () => { $('#incomeForm').reset(); syncConditional(); render(); });
+  $('#resetButton').addEventListener('click', () => {
+    $('#incomeForm').reset();
+    $('#extraHoursRows').replaceChildren();
+    addExtraHoursRow(initialExtraWeek, 4, .25);
+    syncConditional();
+    render();
+  });
 
   const methodHtml = `
     <h2>Zo rekenen we</h2>
@@ -362,8 +560,13 @@
     <p>Het salaris volgt schaal en salarisnummer uit § 6.3 CAO Rijk. Voor januari tot en met juni geldt de oude tabel; vanaf juli geldt de 2,7% hogere tabel. Het IKB is 16,50% met het naar arbeidsduur herleide minimum van €440 respectievelijk €452 per maand. Wie op 1 augustus in dienst is krijgt de eenmalige cao-uitkering naar schaal en arbeidsduur; die uitkering is niet pensioengevend.</p>
     <h3>ABP-werknemerspremie</h3>
     <p>De reguliere eigen bijdrage bestaat uit 8,13% OP/NP over het pensioengevend inkomen minus €19.200 en 0,21% AOP voor sector Rijk boven €29.700. De deeltijdfactor is uren gedeeld door 36. Voor OP/NP geldt het fiscale maximum van €137.800. De berekening gebruikt het pensioengevend inkomen op 1 januari 2026.</p>
+    <h3>Betaald meer werken en overwerk</h3>
+    <p>De planner houdt twee CAO-routes uit elkaar. Bij betaald meer uren werken volgens § 9.2 is ieder vooraf afgesproken uur de waarde van het salaris per uur plus 16,50% IKB. Bij overwerk volgens § 7.7 krijgt een werknemer tot en met schaal 10 normaal hetzelfde aantal uren als verlof en daarnaast een geldvergoeding van 25%, 50% of 100% van het salaris per uur. Alleen als de werkgever het verlof wegens de bedrijfsvoering uitbetaalt, telt de calculator ook 100% salaris per uur als geld mee.</p>
+    <p>Het salaris per uur is 1/156 van het voltijdmaandsalaris. Voor betaald meer werken signaleert de planner het naar arbeidsduur herleide maximum van 100 uur en weken waarin contracttijd plus planning boven 40 uur komt. Dit zijn signalen; toestemming en de beoordeling van de gemiddelde werktijd blijven bij werkgever en werknemer.</p>
     <h3>Belasting en netto loon</h3>
-    <p>Het belastbare loon wordt verminderd met de werknemerspremie voor pensioen en verhoogd met een eventuele fiscale bijtelling. Daarna passen we de box-1-tarieven 2026, algemene heffingskorting, arbeidskorting en — indien van toepassing — inkomensafhankelijke combinatiekorting toe.</p>
+    <p>Het belastbare loon wordt verminderd met de werknemerspremie voor pensioen en verhoogd met een eventuele fiscale bijtelling. Daarna passen we de box-1-tarieven 2026, algemene heffingskorting, arbeidskorting en — indien van toepassing — inkomensafhankelijke combinatiekorting toe. Voor extra uren vergelijken we het volledige jaar zonder en met de uitbetaling. De loonstrook kan tijdelijk een hoger bijzonder tarief tonen; de calculator toont de uiteindelijke jaarheffing.</p>
+    <h3>Pensioen over extra uren</h3>
+    <p>De planner rekent in 2026 geen extra ABP-premie over de ingeplande betaling. Het pensioengevend inkomen voor 2026 is in beginsel op 1 januari vastgesteld. Bovendien sluit het ABP-reglement een vergoeding voor variabel overwerk uit, tenzij in de arbeidsrelatie is vastgelegd dat die wel meetelt. Voor betaald meer uren werken is de openbare CAO-tekst niet voldoende om voor iedere loonadministratie zelfstandig pensioengevendheid vast te stellen; controle van de loonstrook of werkgever blijft daarom nodig.</p>
     <h3>Huishoudregelingen</h3>
     <p>Voor zorgtoeslag, huurtoeslag, kindgebonden budget en kinderopvangtoeslag telt het gezamenlijke toetsingsinkomen. De afzonderlijke correctie maakt het mogelijk verschillen met het fiscale loon te verwerken. Alleen bij de huurtoeslag wordt daarnaast het ingevulde meetellende inkomen van medebewoners toegevoegd.</p>
     <h3>Bewuste grenzen</h3>
@@ -386,6 +589,8 @@
     <ul>
       <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-6/6-3-de-salarisschalen-en-maandbedragen-per-1-juli-2026" target="_blank" rel="noreferrer">CAO Rijk § 6.3 — salarisschalen per 1 juli 2026</a></li>
       <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-9/individueel-keuzebudget" target="_blank" rel="noreferrer">CAO Rijk § 9.1 — Individueel Keuzebudget</a></li>
+      <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-9/betaald-meer-uren-werken-met-gelijkblijvende-arbeidsduur" target="_blank" rel="noreferrer">CAO Rijk § 9.2 — Betaald meer uren werken</a></li>
+      <li><a href="https://www.caorijk.nl/cao-rijk/1.-algemeen/hoofdstuk-7/overwerkvergoeding" target="_blank" rel="noreferrer">CAO Rijk § 7.7 — Overwerkvergoeding</a></li>
       <li><a href="https://www.caorijk.nl/site/binaries/site-content/collections/documents/2026/04/30/onderhandelingsresultaat-cao-rijk-2026/onderhandelingsresultaat-cao-rijk-2026-van-30-april-2026.pdf" target="_blank" rel="noreferrer">CAO Rijk 2026 — loonstijging en eenmalige uitkering</a></li>
       <li><a href="https://www.abp.nl/content/dam/abp/documenten/formulieren-tabellen/premietabel-2026.pdf" target="_blank" rel="noreferrer">ABP Premietabel 2026 — percentages en franchises</a></li>
       <li><a href="https://www.abp.nl/content/dam/abp/documenten/juridisch/pensioenreglement-burgers-2026.pdf" target="_blank" rel="noreferrer">Pensioenreglement ABP voor burgers 2026</a></li>
@@ -397,7 +602,7 @@
       <li><a href="https://zoek.officielebekendmakingen.nl/stcrt-2025-44508.html" target="_blank" rel="noreferrer">Staatscourant 2025, 44508 — AKW-bedragen per 1 januari 2026</a></li>
       <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/nl/toeslagen/content/hulpmiddel-proefberekening-toeslagen" target="_blank" rel="noreferrer">Officiële proefberekening toeslagen</a></li>
     </ul>
-    <p><strong>Niet meegenomen:</strong> een schaal-, trede- of urenwijziging tijdens 2026, PAS, verlof met afwijkende premieverdeling, pensioenovergangsrecht, verkoop van IKB-uren, eigen woning, box 2/3-belasting, alimentatie en gemeentelijke regelingen. Pensioengevende toelagen op de peildatum kun je wel invoeren.</p>`;
+    <p><strong>Niet meegenomen:</strong> een schaal-, trede- of contracturenwijziging tijdens 2026, roosterdienst volgens hoofdstuk 22, TOD, PAS, verlof met afwijkende premieverdeling, pensioenovergangsrecht, verkoop van IKB-uren, eigen woning, box 2/3-belasting, alimentatie en gemeentelijke regelingen. Pensioengevende toelagen op de peildatum kun je wel invoeren.</p>`;
 
   const modal = $('#infoModal');
   $$('[data-open-modal]').forEach(button => button.addEventListener('click', () => {
@@ -411,8 +616,11 @@
 
   $('#copyResult').addEventListener('click', async () => {
     const d = window.latestCalculation;
+    const planned = extraHoursProfile();
+    const plannedNet = planned.enabled ? d.disposable - getData().disposable : 0;
     const rijkLines = d.rijk ? `\nCAO Rijk: schaal ${d.rijk.scale}, trede ${d.rijk.step}, ${d.rijk.hours} uur\nIKB gemiddeld: ${euroPrecise.format(d.rijk.ikbAverageMonthly)} per maand\nABP eigen bijdrage: ${euroPrecise.format(d.rijk.pensionAnnual / 12)} per maand` : '';
-    const text = `NettoInzicht 2026${rijkLines}\nOver na gekozen vaste posten: ${euro.format(d.disposable / 12)} per maand\nNetto loon huishouden: ${euro.format(d.netWage / 12)} per maand\nRegelingen en kinderbijslag: ${euro.format(d.benefits / 12)} per maand\nZorg, huur en opvang: ${euro.format(d.selectedCosts / 12)} per maand\nIndicatieve uitkomst; controleer je loonstrook en officiële beschikkingen.`;
+    const extraLines = planned.enabled && planned.hours ? `\nExtra uren: ${oneDecimal.format(planned.hours)} uur\nBruto uitbetaling extra uren: ${euroPrecise.format(planned.grossCash)}\nNetto over van extra uren: ${euroPrecise.format(plannedNet)} (${euroPrecise.format(plannedNet / planned.hours)} per uur)${planned.leaveHours ? `\nCompensatieverlof: ${oneDecimal.format(planned.leaveHours)} uur` : ''}` : '';
+    const text = `NettoInzicht 2026${rijkLines}${extraLines}\nOver na gekozen vaste posten: ${euro.format(d.disposable / 12)} per maand\nNetto loon huishouden: ${euro.format(d.netWage / 12)} per maand\nRegelingen en kinderbijslag: ${euro.format(d.benefits / 12)} per maand\nZorg, huur en opvang: ${euro.format(d.selectedCosts / 12)} per maand\nIndicatieve uitkomst; controleer je loonstrook en officiële beschikkingen.`;
     try { await navigator.clipboard.writeText(text); }
     catch { /* Clipboard kan in sommige previews geblokkeerd zijn. */ }
     const toast = $('#toast');
@@ -420,6 +628,7 @@
     setTimeout(() => toast.classList.remove('show'), 1800);
   });
 
+  addExtraHoursRow(initialExtraWeek, 4, .25);
   syncConditional();
   render();
 })();
