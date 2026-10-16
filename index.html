@@ -76,6 +76,7 @@
                       <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
                       <option>7</option><option>8</option><option>9</option><option selected>10</option><option>11</option><option>12</option>
                       <option>13</option><option>14</option><option>15</option><option>16</option><option>17</option><option>18</option>
+                      <option>19</option>
                     </select>
                   </div>
                   <div class="field">
@@ -146,8 +147,12 @@
                   <label for="incomeAdjustment">Correctie toetsingsinkomen p/j <small>mag negatief</small></label>
                   <div class="money-input compact"><span>€</span><input id="incomeAdjustment" name="incomeAdjustment" type="number" step="100" value="0"></div>
                 </div>
+                <div class="field">
+                  <label for="otherAggregateIncome">Overig verzamelinkomen p/j <small>box 2/3 of ander inkomen</small></label>
+                  <div class="money-input compact"><span>€</span><input id="otherAggregateIncome" name="otherAggregateIncome" type="number" min="0" step="100" value="0"></div>
+                </div>
               </div>
-              <p class="field-note">IKB en de cao-uitkering worden als belastbaar loon meegerekend. De bijtelling verhoogt het belastbare loon maar niet de uitbetaling. De correctie op het toetsingsinkomen beïnvloedt alleen toeslagen.</p>
+              <p class="field-note">IKB en de cao-uitkering worden als belastbaar loon meegerekend. De bijtelling verhoogt het belastbare loon maar niet de uitbetaling. De correctie op het toetsingsinkomen beïnvloedt alleen toeslagen; overig verzamelinkomen verlaagt zo nodig de algemene heffingskorting.</p>
               <label class="switch-row">
                 <span><strong>Toeslag- of fiscale partner</strong><small>Partnerinkomen telt mee voor toeslagen</small></span>
                 <input id="hasPartner" name="hasPartner" type="checkbox" role="switch"><i aria-hidden="true"></i>
@@ -227,10 +232,82 @@
             </div>
           </fieldset>
 
+          <fieldset class="form-section open" id="payrollSection">
+            <legend>
+              <button class="section-toggle" type="button" aria-expanded="true">
+                <span><b>3</b> P-Direkt-loonstrook</span><span aria-hidden="true">−</span>
+              </button>
+            </legend>
+            <div class="section-body">
+              <div class="field-grid three">
+                <div class="field">
+                  <label for="payrollMonth">Welke loonstrook?</label>
+                  <select id="payrollMonth" name="payrollMonth">
+                    <option value="1">Januari 2026</option><option value="2">Februari 2026</option><option value="3">Maart 2026</option>
+                    <option value="4">April 2026</option><option value="5">Mei 2026</option><option value="6">Juni 2026</option>
+                    <option value="7">Juli 2026</option><option value="8" selected>Augustus 2026</option><option value="9">September 2026</option>
+                    <option value="10">Oktober 2026</option><option value="11">November 2026</option><option value="12">December 2026</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="ikbPayoutMode">Uitbetaling IKB</label>
+                  <select id="ikbPayoutMode" name="ikbPayoutMode">
+                    <option value="monthly" selected>Iedere maand</option>
+                    <option value="lump">In één gekozen maand</option>
+                  </select>
+                </div>
+                <div class="field conditional" id="ikbPayoutMonthField" hidden>
+                  <label for="ikbPayoutMonth">Maand IKB-uitbetaling</label>
+                  <select id="ikbPayoutMonth" name="ikbPayoutMonth">
+                    <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maart</option><option value="4">April</option>
+                    <option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Augustus</option>
+                    <option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12" selected>December</option>
+                  </select>
+                </div>
+              </div>
+
+              <label class="switch-row">
+                <span><strong>Loonheffingskorting bij P-Direkt</strong><small>Pas deze maar bij één werkgever of uitkeringsinstantie toe</small></span>
+                <input id="payrollTaxCredit" name="payrollTaxCredit" type="checkbox" role="switch" checked><i aria-hidden="true"></i>
+              </label>
+
+              <label class="switch-row">
+                <span><strong>Schat fiscaal jaarloon bijzonder tarief</strong><small>Vervang dit door het bedrag op je loonstrook als je dat kent</small></span>
+                <input id="autoSpecialAnnualWage" name="autoSpecialAnnualWage" type="checkbox" role="switch" checked><i aria-hidden="true"></i>
+              </label>
+              <div class="conditional" id="specialAnnualWageField" hidden>
+                <div class="field">
+                  <label for="specialAnnualWage">Fiscaal jaarloon vorig jaar</label>
+                  <div class="money-input compact"><span>€</span><input id="specialAnnualWage" name="specialAnnualWage" type="number" min="0" step="100" value="55000"></div>
+                </div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="extraPayoutMonth">Uitbetaling extra uren</label>
+                  <select id="extraPayoutMonth" name="extraPayoutMonth">
+                    <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maart</option><option value="4">April</option>
+                    <option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Augustus</option>
+                    <option value="9" selected>September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">December</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="bonusPayoutMonth">Uitbetaling overige toelagen</label>
+                  <select id="bonusPayoutMonth" name="bonusPayoutMonth">
+                    <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maart</option><option value="4">April</option>
+                    <option value="5">Mei</option><option value="6">Juni</option><option value="7">Juli</option><option value="8">Augustus</option>
+                    <option value="9">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12" selected>December</option>
+                  </select>
+                </div>
+              </div>
+              <p class="field-note">Deze loonstrookroute geldt voor iemand jonger dan de AOW-leeftijd, wonend en volledig verzekerd in Nederland. De jaarafrekening blijft daarnaast apart zichtbaar.</p>
+            </div>
+          </fieldset>
+
           <fieldset class="form-section">
             <legend>
               <button class="section-toggle" type="button" aria-expanded="false">
-                <span><b>3</b> Wonen & vermogen</span><span aria-hidden="true">+</span>
+                <span><b>4</b> Wonen & vermogen</span><span aria-hidden="true">+</span>
               </button>
             </legend>
             <div class="section-body" hidden>
@@ -267,7 +344,7 @@
           <fieldset class="form-section">
             <legend>
               <button class="section-toggle" type="button" aria-expanded="false">
-                <span><b>4</b> Kinderen & opvang</span><span aria-hidden="true">+</span>
+                <span><b>5</b> Kinderen & opvang</span><span aria-hidden="true">+</span>
               </button>
             </legend>
             <div class="section-body" hidden>
@@ -317,6 +394,30 @@
           <div><span>Netto loon huishouden</span><strong id="netWageMonthly">€ 0</strong></div>
           <div><span>Regelingen & kinderbijslag</span><strong id="benefitsMonthly">€ 0</strong></div>
           <div><span>Zorg, huur & opvang</span><strong id="selectedCostsMonthly">€ 0</strong></div>
+        </div>
+
+        <div class="result-card payroll-card" id="payrollResultCard">
+          <div class="card-title-row">
+            <h3>Verwachte P-Direkt-uitbetaling</h3>
+            <span id="payrollMonthLabel">augustus 2026</span>
+          </div>
+          <div class="payroll-hero">
+            <div><span>Verwacht op je rekening</span><strong id="payrollBankNet">€ 0</strong></div>
+            <div><span>Bijzonder tarief</span><strong id="payrollSpecialRate">0,00%</strong></div>
+          </div>
+          <div class="payroll-stats">
+            <div><span>Bruto regulier</span><strong id="payrollRegularGross">€ 0</strong></div>
+            <div><span>Incidenten</span><strong id="payrollSpecialGross">€ 0</strong></div>
+            <div><span>Loonheffing totaal</span><strong id="payrollWithholding">€ 0</strong></div>
+          </div>
+          <details class="payroll-details">
+            <summary><span>Bekijk de loonstrookregels</span><span>open</span></summary>
+            <div id="payrollBreakdown" class="payroll-breakdown"></div>
+          </details>
+          <div class="settlement-strip">
+            <div><span>Verwachte correctie bij jaarafrekening</span><strong id="annualSettlement">€ 0</strong></div>
+            <p id="annualSettlementText">Ingehouden loonheffing vergeleken met de uiteindelijke jaarheffing.</p>
+          </div>
         </div>
 
         <div class="result-card extra-result-card" id="extraHoursResultCard">
@@ -388,7 +489,7 @@
           <button id="copyResult" type="button">Kopieer samenvatting</button>
         </div>
 
-        <p class="result-disclaimer">Indicatieve netto-uitkomst op jaarbasis. CAO Rijk-salaris, IKB en reguliere ABP-werknemerspremies zijn volgens de 2026-regels berekend; individuele loonstrookcorrecties, eerdere schaalwijzigingen en bijzondere pensioensituaties kunnen afwijken.</p>
+        <p class="result-disclaimer">De loonstrook volgt de officiële witte maandtabel en tabel bijzondere beloningen 2026 voor de Nederlandse standaardsituatie, jonger dan de AOW-leeftijd. Individuele P-Direkt-correcties, eerdere salariswijzigingen en bijzondere verzekerings- of pensioensituaties kunnen afwijken.</p>
       </section>
     </section>
 

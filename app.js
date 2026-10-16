@@ -43,7 +43,8 @@
     15: [6819.72,7094.18,7369.22,7659.07,7956.89,8229.06,8505.47,8781.26,9028.02,9286.47,9561.61],
     16: [7659.07,7956.89,8229.06,8505.47,8781.26,9028.02,9286.47,9561.61,9831.67,10106.79,10407.54],
     17: [8505.47,8781.26,9028.02,9286.47,9561.61,9831.67,10106.79,10407.54,10716.21,11025.76,11334.46],
-    18: [9286.47,9561.61,9831.67,10106.79,10407.54,10716.21,11025.76,11334.46,11671.25,12008.02,12345.58]
+    18: [9286.47,9561.61,9831.67,10106.79,10407.54,10716.21,11025.76,11334.46,11671.25,12008.02,12345.58],
+    19: [10106.79,10407.54,10716.21,11025.76,11334.46,11671.25,12008.02,12345.58,12638.26,12930.17,13223.63]
   };
 
   const RIJK = {
@@ -80,9 +81,9 @@
   ];
 
   const scenarios = {
-    starter: { isRijkEmployee: true, rijkScale: 8, rijkStep: 2, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 40, otherDeductions: 0, incomeAdjustment: 0, hasPartner: false, isRenter: true, baseRent: 725, householdMembers: 1, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 7000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false },
-    family: { isRijkEmployee: true, rijkScale: 10, rijkStep: 5, rijkHours: 32, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 80, otherDeductions: 15, incomeAdjustment: 0, hasPartner: true, partnerGross: 2550, partnerPension: 90, isRenter: true, baseRent: 910, householdMembers: 4, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 15000, kids05: 1, kids611: 1, kids1215: 0, kids1617: 0, iackEligible: true, hasChildcare: true, childcareType: 'daycare', childcareChildren: 1, childcareHours: 96, childcareRate: 11.65 },
-    couple: { isRijkEmployee: true, rijkScale: 12, rijkStep: 8, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 7200, netReimbursements: 50, otherDeductions: 60, incomeAdjustment: 0, hasPartner: true, partnerGross: 3600, partnerPension: 140, isRenter: false, assets: 32000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false }
+    starter: { isRijkEmployee: true, rijkScale: 8, rijkStep: 2, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 40, otherDeductions: 0, incomeAdjustment: 0, otherAggregateIncome: 0, hasPartner: false, isRenter: true, baseRent: 725, householdMembers: 1, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 7000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false },
+    family: { isRijkEmployee: true, rijkScale: 10, rijkStep: 5, rijkHours: 32, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 0, netReimbursements: 80, otherDeductions: 15, incomeAdjustment: 0, otherAggregateIncome: 0, hasPartner: true, partnerGross: 2550, partnerPension: 90, isRenter: true, baseRent: 910, householdMembers: 4, coResidentIncome: 0, coResidentOverAsset: false, youngRenter: false, assets: 15000, kids05: 1, kids611: 1, kids1215: 0, kids1617: 0, iackEligible: true, hasChildcare: true, childcareType: 'daycare', childcareChildren: 1, childcareHours: 96, childcareRate: 11.65 },
+    couple: { isRijkEmployee: true, rijkScale: 12, rijkStep: 8, rijkHours: 36, rijkAugustEmployed: true, rijkPensionExtras: 0, planExtraHours: false, annualBonus: 0, carePremium: 159, taxableAddition: 7200, netReimbursements: 50, otherDeductions: 60, incomeAdjustment: 0, otherAggregateIncome: 0, hasPartner: true, partnerGross: 3600, partnerPension: 140, isRenter: false, assets: 32000, kids05: 0, kids611: 0, kids1215: 0, kids1617: 0, hasChildcare: false }
   };
 
   function progressiveTax(income) {
@@ -120,13 +121,14 @@
     const deductions = (options.otherDeductions || 0) * 12;
     const taxable = Math.max(0, gross + taxableAddition - pension);
     const taxBefore = progressiveTax(taxable);
-    const credits = Math.min(taxBefore, generalCredit(taxable) + labourCredit(taxable) + (iackApplies ? iack(taxable) : 0));
+    const creditIncome = taxable + (options.aggregateIncomeExtra || 0);
+    const credits = Math.min(taxBefore, generalCredit(creditIncome) + labourCredit(taxable) + (iackApplies ? iack(taxable) : 0));
     const tax = Math.max(0, taxBefore - credits);
-    return { gross, pension, taxableAddition, reimbursements, deductions, taxable, taxBefore, credits, tax, net: gross + reimbursements - pension - tax - deductions, iack: iackApplies ? iack(taxable) : 0 };
+    return { gross, pension, taxableAddition, reimbursements, deductions, taxable, creditIncome, taxBefore, credits, tax, net: gross + reimbursements - pension - tax - deductions, iack: iackApplies ? iack(taxable) : 0 };
   }
 
   function rijkProfile(annualGrossExtra = 0) {
-    const scale = Math.min(18, Math.max(1, Math.round(num('rijkScale'))));
+    const scale = Math.min(19, Math.max(1, Math.round(num('rijkScale'))));
     const step = Math.min(10, Math.max(0, Math.round(num('rijkStep'))));
     const hours = Math.min(RIJK.fulltimeHours, Math.max(1, num('rijkHours')));
     const factor = hours / RIJK.fulltimeHours;
@@ -152,6 +154,8 @@
       salaryJanuary: salaryJanuaryFulltime * factor,
       salaryJuly: salaryJulyFulltime * factor,
       salaryAnnual, ikbAnnual, caoPayment, otherGross,
+      ikbJanuary: ikbJanuaryFulltime * factor,
+      ikbJuly: ikbJulyFulltime * factor,
       ikbAverageMonthly: ikbAnnual / 12,
       pensionableFulltime, opnpContribution, aopContribution, pensionAnnual,
       grossAnnual: salaryAnnual + ikbAnnual + caoPayment + otherGross
@@ -315,7 +319,8 @@
       ...(rijk ? { annualGross: rijk.grossAnnual, annualPension: rijk.pensionAnnual } : {}),
       taxableAddition: num('taxableAddition'),
       netReimbursements: num('netReimbursements'),
-      otherDeductions: num('otherDeductions')
+      otherDeductions: num('otherDeductions'),
+      aggregateIncomeExtra: num('otherAggregateIncome')
     });
     const partnerNet = partner ? employeeNet(num('partnerGross'), 8, 0, num('partnerPension'), partnerGetsIack) : { gross: 0, pension: 0, taxableAddition: 0, reimbursements: 0, deductions: 0, taxable: 0, tax: 0, credits: 0, net: 0, iack: 0 };
     const householdIncome = Math.max(0, primary.taxable + partnerNet.taxable + signed('incomeAdjustment'));
@@ -335,6 +340,157 @@
     const netIncludingBenefits = netWage + benefits;
     const disposable = netIncludingBenefits - selectedCosts;
     return { partner, isRijkEmployee, rijk, primary, partnerNet, householdIncome, rentIncome, care, kgb, kb, rent, childcare: childcareCalc, benefits, carePremium, housingCost, selectedCosts, netWage, netIncludingBenefits, disposable, kids: kids05 + kids611 + kids1215 + kids1617 };
+  }
+
+  const MONTH_NAMES = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+
+  const roundTo = (value, decimals) => {
+    const factor = 10 ** decimals;
+    return Math.round((value + Number.EPSILON) * factor) / factor;
+  };
+  const floorTo = (value, decimals) => {
+    const factor = 10 ** decimals;
+    return Math.floor((value + Number.EPSILON) * factor) / factor;
+  };
+
+  function payrollLabourCredit(annualWage) {
+    if (annualWage >= 132920) return 0;
+    const first = Math.min(roundTo(.08324 * annualWage, 5), 996);
+    const throughSecond = Math.min(first + roundTo(.31009 * Math.max(0, annualWage - 11965), 5), 5300);
+    const throughThird = Math.min(throughSecond + roundTo(.01950 * Math.max(0, annualWage - 25845), 5), 5685);
+    const reduced = Math.max(0, throughThird - roundTo(.06510 * Math.max(0, annualWage - 45592), 5));
+    return Math.ceil(reduced - 1e-9);
+  }
+
+  function payrollGeneralCredit(annualWage) {
+    if (annualWage <= 29736) return 3115;
+    if (annualWage > 78426) return 0;
+    return Math.max(0, Math.ceil(3115 - (annualWage - 29736) * .06398 - 1e-9));
+  }
+
+  function payrollTaxBeforeCredits(annualWage) {
+    let value;
+    if (annualWage <= 38883) value = annualWage * .3575;
+    else if (annualWage <= 78426) value = (annualWage - 38883) * .3756 + 13900;
+    else value = (annualWage - 78426) * .495 + 28752;
+    return Math.max(0, Math.floor(value + 1e-9));
+  }
+
+  function payrollAnnualTableAmount(annualWage, applyTaxCredit) {
+    const before = payrollTaxBeforeCredits(annualWage);
+    const credits = applyTaxCredit ? payrollGeneralCredit(annualWage) + payrollLabourCredit(annualWage) : 0;
+    return Math.max(0, Math.floor(before - Math.min(before, credits) + 1e-9));
+  }
+
+  // Witte maandtabel Nederland, standaardsituatie, jonger dan de AOW-leeftijd.
+  function monthlyPayrollWithholding(taxableMonthlyWage, applyTaxCredit) {
+    if (taxableMonthlyWage <= 0) return 0;
+    const annualized = roundTo(taxableMonthlyWage * 12, 5);
+    if (annualized <= 133110) {
+      const tableAnnualWage = Math.floor(annualized / 54) * 54;
+      return roundTo(payrollAnnualTableAmount(tableAnnualWage, applyTaxCredit) / 12, 2);
+    }
+    const atMaximum = roundTo(payrollAnnualTableAmount(133110, applyTaxCredit) / 12, 2);
+    const aboveMaximum = floorTo((taxableMonthlyWage - 133110 / 12) * .495, 2);
+    return roundTo(atMaximum + aboveMaximum, 2);
+  }
+
+  // Officiële witte tabel bijzondere beloningen 2026, Nederland, standaardsituatie.
+  function specialRewardRate(annualWage, applyTaxCredit) {
+    const rows = [
+      [0, .3575, 0],
+      [11358, .3575, -.0832],
+      [12923, .3575, -.3101],
+      [23931, .3575, -.0195],
+      [29737, .3575, .0445],
+      [38884, .3756, .0445],
+      [45593, .3756, .1291],
+      [78427, .4950, .0651],
+      [143555, .4950, 0]
+    ];
+    const row = [...rows].reverse().find(([lower]) => annualWage >= lower) || rows[0];
+    if (!applyTaxCredit) return row[1];
+    if (annualWage < 11358) return 0;
+    return Math.max(0, row[1] + row[2]);
+  }
+
+  function payrollProfile(data, extra) {
+    if (!data.rijk) return null;
+    const rijk = data.rijk;
+    const selectedMonth = Math.min(12, Math.max(1, Math.round(num('payrollMonth'))));
+    const ikbMonthly = $('#ikbPayoutMode').value === 'monthly';
+    const ikbPayoutMonth = Math.min(12, Math.max(1, Math.round(num('ikbPayoutMonth'))));
+    const extraPayoutMonth = Math.min(12, Math.max(1, Math.round(num('extraPayoutMonth'))));
+    const bonusPayoutMonth = Math.min(12, Math.max(1, Math.round(num('bonusPayoutMonth'))));
+    const applyTaxCredit = $('#payrollTaxCredit').checked;
+    const pensionMonthly = rijk.pensionAnnual / 12;
+    const taxableAdditionMonthly = num('taxableAddition') / 12;
+    const autoAnnualWage = Math.max(0, rijk.salaryAnnual + rijk.ikbAnnual - rijk.pensionAnnual + num('taxableAddition'));
+    const annualWage = $('#autoSpecialAnnualWage').checked ? autoAnnualWage : num('specialAnnualWage');
+    const rate = specialRewardRate(annualWage, applyTaxCredit);
+    const specialByMonth = Array.from({ length: 12 }, () => []);
+
+    if (!ikbMonthly) specialByMonth[ikbPayoutMonth - 1].push(['IKB-uitbetaling', rijk.ikbAnnual]);
+    if (rijk.caoPayment) specialByMonth[7].push(['Eenmalige cao-uitkering', rijk.caoPayment]);
+    if (num('annualBonus')) specialByMonth[bonusPayoutMonth - 1].push(['Overige bruto toelagen', num('annualBonus')]);
+    if (extra.grossCash) specialByMonth[extraPayoutMonth - 1].push(['Uitbetaling extra uren', extra.grossCash]);
+
+    const monthResult = month => {
+      const firstHalf = month <= 6;
+      const salary = firstHalf ? rijk.salaryJanuary : rijk.salaryJuly;
+      const monthlyIkb = ikbMonthly ? (firstHalf ? rijk.ikbJanuary : rijk.ikbJuly) : 0;
+      const regularGross = salary + monthlyIkb;
+      const fiscalRegular = Math.max(0, regularGross + taxableAdditionMonthly - pensionMonthly);
+      const regularWithholding = monthlyPayrollWithholding(fiscalRegular, applyTaxCredit);
+      const specialItems = specialByMonth[month - 1];
+      const specialGross = specialItems.reduce((sum, [, amount]) => sum + amount, 0);
+      const specialWithholding = floorTo(specialGross * rate, 2);
+      const bankNet = regularGross + specialGross + num('netReimbursements') - pensionMonthly - regularWithholding - specialWithholding - num('otherDeductions');
+      return { month, salary, monthlyIkb, regularGross, fiscalRegular, regularWithholding, specialItems, specialGross, specialWithholding, bankNet };
+    };
+
+    const selected = monthResult(selectedMonth);
+    const year = Array.from({ length: 12 }, (_, index) => monthResult(index + 1));
+    const annualWithholding = year.reduce((sum, month) => sum + month.regularWithholding + month.specialWithholding, 0);
+    const settlement = annualWithholding - data.primary.tax;
+    return { selectedMonth, ikbMonthly, applyTaxCredit, pensionMonthly, taxableAdditionMonthly, autoAnnualWage, annualWage, rate, selected, year, annualWithholding, settlement };
+  }
+
+  function renderPayroll(data, extra) {
+    const payroll = payrollProfile(data, extra);
+    window.latestPayroll = payroll;
+    $('#payrollResultCard').hidden = !payroll;
+    if (!payroll) return;
+    const month = payroll.selected;
+    $('#payrollMonthLabel').textContent = `${MONTH_NAMES[payroll.selectedMonth - 1]} 2026`;
+    $('#payrollBankNet').textContent = euroPrecise.format(month.bankNet);
+    $('#payrollSpecialRate').textContent = `${(payroll.rate * 100).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+    $('#payrollRegularGross').textContent = euroPrecise.format(month.regularGross);
+    $('#payrollSpecialGross').textContent = euroPrecise.format(month.specialGross);
+    $('#payrollWithholding').textContent = euroPrecise.format(month.regularWithholding + month.specialWithholding);
+
+    const specialRows = month.specialItems.length
+      ? month.specialItems.map(([label, amount]) => breakdownRow(label, amount, 'incidenteel loon; tabel bijzondere beloningen', 'positive'))
+      : [breakdownRow('Incidentele betalingen', 0, 'geen in deze gekozen maand')];
+    $('#payrollBreakdown').innerHTML = [
+      breakdownRow('Salaris', month.salary, 'bruto vast loon', 'positive'),
+      ...(month.monthlyIkb ? [breakdownRow('Maandelijks IKB', month.monthlyIkb, 'via de witte maandtabel', 'positive')] : []),
+      ...specialRows,
+      breakdownRow('ABP OP/NP en AOP', -payroll.pensionMonthly, 'werknemersdeel; verlaagt het fiscale loon', 'negative'),
+      ...(payroll.taxableAdditionMonthly ? [breakdownRow('Fiscale bijtelling', payroll.taxableAdditionMonthly, 'wel fiscaal loon, geen bankbetaling')] : []),
+      breakdownRow('Fiscaal tijdvakloon', month.fiscalRegular, 'grondslag witte maandtabel'),
+      breakdownRow('Loonheffing maandtabel', -month.regularWithholding, `${payroll.applyTaxCredit ? 'met' : 'zonder'} loonheffingskorting; 1e schijf incl. AOW/Anw/Wlz`, 'negative'),
+      ...(month.specialGross ? [breakdownRow('Loonheffing bijzonder tarief', -month.specialWithholding, `${(payroll.rate * 100).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% bij jaarloon ${euro.format(payroll.annualWage)}`, 'negative')] : []),
+      breakdownRow('WW, WIA, ZW en werkgeversheffing Zvw', 0, 'werkgeverslasten; niet van jouw nettoloon'),
+      ...(num('netReimbursements') ? [breakdownRow('Netto vergoedingen', num('netReimbursements'), 'onbelast uitbetaald', 'positive')] : []),
+      ...(num('otherDeductions') ? [breakdownRow('Overige inhoudingen', -num('otherDeductions'), 'door jou ingevoerd', 'negative')] : []),
+      breakdownRow('Verwacht op je rekening', month.bankNet, 'bruto cash minus werknemersinhoudingen', 'total')
+    ].join('');
+
+    const settlement = payroll.settlement;
+    $('#annualSettlement').textContent = settlement >= 0 ? `terug ${euroPrecise.format(settlement)}` : `bijbetalen ${euroPrecise.format(Math.abs(settlement))}`;
+    $('#annualSettlement').className = settlement >= 0 ? 'refund' : 'payment';
+    $('#annualSettlementText').textContent = `Ingehouden in 2026: ${euroPrecise.format(payroll.annualWithholding)} · berekende definitieve jaarheffing: ${euroPrecise.format(data.primary.tax)}. ${$('#autoSpecialAnnualWage').checked ? 'Het bijzondere jaarloon is geschat; neem voor de beste loonstrookmatch het bedrag van P-Direkt over.' : 'Het door jou ingevoerde bijzondere jaarloon is gebruikt.'}`;
   }
 
   function row(label, amount, max, type = '') {
@@ -446,6 +602,8 @@
     $('#annualDisposable').textContent = `${euro.format(d.disposable)} per jaar`;
     $('#resultSummary').textContent = `${d.rijk ? `schaal ${d.rijk.scale}, trede ${d.rijk.step}, ${d.rijk.hours} uur — ` : ''}na belasting, pensioen, ${d.partner ? '2 zorgpremies' : 'zorgpremie'}${d.housingCost ? ', huur' : ''}${d.childcare.cost ? ' en opvang' : ''}`;
 
+    renderPayroll(d, extraHours);
+
     const grossMonth = month(d.primary.gross + d.partnerNet.gross);
     const max = Math.max(grossMonth, 1);
     const otherGrossWithoutExtraHours = d.rijk ? Math.max(0, d.rijk.otherGross - extraHours.grossCash) : 0;
@@ -498,6 +656,8 @@
     $('#partnerFields').hidden = !$('#hasPartner').checked;
     $('#rentFields').hidden = !$('#isRenter').checked;
     $('#childcareFields').hidden = !$('#hasChildcare').checked;
+    $('#ikbPayoutMonthField').hidden = $('#ikbPayoutMode').value !== 'lump';
+    $('#specialAnnualWageField').hidden = $('#autoSpecialAnnualWage').checked;
     syncExtraHoursRoute();
   }
 
@@ -555,7 +715,7 @@
 
   const methodHtml = `
     <h2>Zo rekenen we</h2>
-    <p>De tool rekent kalenderjaar 2026 op jaarbasis door en toont daarna een maandgemiddelde. Het moment waarop je IKB laat uitbetalen verandert daarom het jaarresultaat niet.</p>
+    <p>De tool toont twee verschillende uitkomsten: de verwachte bankbetaling op één P-Direkt-loonstrook en de definitieve jaaruitkomst. Het moment waarop je IKB of extra uren laat uitbetalen verandert de inhouding op de loonstrook, maar niet vanzelf de uiteindelijke jaarheffing.</p>
     <h3>CAO Rijk, IKB en cao-uitkering</h3>
     <p>Het salaris volgt schaal en salarisnummer uit § 6.3 CAO Rijk. Voor januari tot en met juni geldt de oude tabel; vanaf juli geldt de 2,7% hogere tabel. Het IKB is 16,50% met het naar arbeidsduur herleide minimum van €440 respectievelijk €452 per maand. Wie op 1 augustus in dienst is krijgt de eenmalige cao-uitkering naar schaal en arbeidsduur; die uitkering is niet pensioengevend.</p>
     <h3>ABP-werknemerspremie</h3>
@@ -563,8 +723,13 @@
     <h3>Betaald meer werken en overwerk</h3>
     <p>De planner houdt twee CAO-routes uit elkaar. Bij betaald meer uren werken volgens § 9.2 is ieder vooraf afgesproken uur de waarde van het salaris per uur plus 16,50% IKB. Bij overwerk volgens § 7.7 krijgt een werknemer tot en met schaal 10 normaal hetzelfde aantal uren als verlof en daarnaast een geldvergoeding van 25%, 50% of 100% van het salaris per uur. Alleen als de werkgever het verlof wegens de bedrijfsvoering uitbetaalt, telt de calculator ook 100% salaris per uur als geld mee.</p>
     <p>Het salaris per uur is 1/156 van het voltijdmaandsalaris. Voor betaald meer werken signaleert de planner het naar arbeidsduur herleide maximum van 100 uur en weken waarin contracttijd plus planning boven 40 uur komt. Dit zijn signalen; toestemming en de beoordeling van de gemiddelde werktijd blijven bij werkgever en werknemer.</p>
-    <h3>Belasting en netto loon</h3>
-    <p>Het belastbare loon wordt verminderd met de werknemerspremie voor pensioen en verhoogd met een eventuele fiscale bijtelling. Daarna passen we de box-1-tarieven 2026, algemene heffingskorting, arbeidskorting en — indien van toepassing — inkomensafhankelijke combinatiekorting toe. Voor extra uren vergelijken we het volledige jaar zonder en met de uitbetaling. De loonstrook kan tijdelijk een hoger bijzonder tarief tonen; de calculator toont de uiteindelijke jaarheffing.</p>
+    <h3>P-Direkt-loonstrook en loonheffing</h3>
+    <p>Het vaste fiscale maandloon gaat door de witte maandtabel 2026 voor een werknemer jonger dan de AOW-leeftijd die in Nederland woont en volledig verzekerd is. De officiële rekenregels ronden het omgerekende jaarloon tot en met €133.110 naar beneden af in stappen van €54; dat zijn stappen van €4,50 in de maandtabel. De loonheffingskorting is optioneel.</p>
+    <p>Een jaarlijkse IKB-uitbetaling, de cao-uitkering, overige incidentele toelagen en uitbetaalde extra uren lopen via de witte tabel bijzondere beloningen. Het tarief volgt het fiscale jaarloon van het vorige jaar. Bij maandelijkse IKB-uitbetaling gebruikt P-Direkt juist de maandtabel. De getoonde jaarcorrectie vergelijkt alle berekende inhoudingen met de box-1-heffing na heffingskortingen.</p>
+    <h3>Welke premies gaan van jouw netto af?</h3>
+    <p>De premies AOW, Anw en Wlz zitten al in het tarief van de eerste schijf. Het werknemersdeel ABP OP/NP en AOP staat apart als inhouding en verlaagt het fiscale loon. Premies werknemersverzekeringen (WW, WIA en ZW) en de werkgeversheffing Zvw zijn in de standaardsituatie werkgeverslasten en worden daarom niet nogmaals van jouw nettoloon afgetrokken. Een individuele Whk-verhaalsbijdrage of andere loonstrookinhouding kun je onder ‘overige looninhoudingen’ invoeren.</p>
+    <h3>Definitieve belasting en netto loon</h3>
+    <p>Het belastbare loon wordt verminderd met de werknemerspremie voor pensioen en verhoogd met een eventuele fiscale bijtelling. Daarna passen we de box-1-tarieven 2026, algemene heffingskorting, arbeidskorting en — indien van toepassing — inkomensafhankelijke combinatiekorting toe. Overig verzamelinkomen verlaagt de algemene heffingskorting, maar de belasting over box 2 of box 3 zelf wordt niet berekend.</p>
     <h3>Pensioen over extra uren</h3>
     <p>De planner rekent in 2026 geen extra ABP-premie over de ingeplande betaling. Het pensioengevend inkomen voor 2026 is in beginsel op 1 januari vastgesteld. Bovendien sluit het ABP-reglement een vergoeding voor variabel overwerk uit, tenzij in de arbeidsrelatie is vastgelegd dat die wel meetelt. Voor betaald meer uren werken is de openbare CAO-tekst niet voldoende om voor iedere loonadministratie zelfstandig pensioengevendheid vast te stellen; controle van de loonstrook of werkgever blijft daarom nodig.</p>
     <h3>Huishoudregelingen</h3>
@@ -574,10 +739,11 @@
 
   const sourcesHtml = `
     <h2>Juridische grondslag 2026</h2>
-    <p>Primaire wetgeving is het uitgangspunt. Gedelegeerde regelgeving en officiële bekendmakingen leveren de voor 2026 geldende bedragen en tabellen. Laatst inhoudelijk gecontroleerd: 14 oktober 2026.</p>
+    <p>Primaire wetgeving is het uitgangspunt. Gedelegeerde regelgeving en officiële bekendmakingen leveren de voor 2026 geldende bedragen en tabellen. Laatst inhoudelijk gecontroleerd: 16 oktober 2026.</p>
     <h3>Wetten</h3>
     <ul>
       <li><a href="https://wetten.overheid.nl/BWBR0011353/2026-01-01" target="_blank" rel="noreferrer">Wet inkomstenbelasting 2001</a> — box 1 en heffingskortingen</li>
+      <li><a href="https://wetten.overheid.nl/BWBR0002471/2026-01-01" target="_blank" rel="noreferrer">Wet op de loonbelasting 1964</a> — loonheffing en tabellen</li>
       <li><a href="https://wetten.overheid.nl/BWBR0018472/2026-01-01" target="_blank" rel="noreferrer">Algemene wet inkomensafhankelijke regelingen</a> — partner, toetsingsinkomen en vermogen</li>
       <li><a href="https://wetten.overheid.nl/BWBR0018451/2026-01-01" target="_blank" rel="noreferrer">Wet op de zorgtoeslag</a></li>
       <li><a href="https://wetten.overheid.nl/BWBR0008659/2026-01-01" target="_blank" rel="noreferrer">Wet op de huurtoeslag</a></li>
@@ -594,6 +760,9 @@
       <li><a href="https://www.caorijk.nl/site/binaries/site-content/collections/documents/2026/04/30/onderhandelingsresultaat-cao-rijk-2026/onderhandelingsresultaat-cao-rijk-2026-van-30-april-2026.pdf" target="_blank" rel="noreferrer">CAO Rijk 2026 — loonstijging en eenmalige uitkering</a></li>
       <li><a href="https://www.abp.nl/content/dam/abp/documenten/formulieren-tabellen/premietabel-2026.pdf" target="_blank" rel="noreferrer">ABP Premietabel 2026 — percentages en franchises</a></li>
       <li><a href="https://www.abp.nl/content/dam/abp/documenten/juridisch/pensioenreglement-burgers-2026.pdf" target="_blank" rel="noreferrer">Pensioenreglement ABP voor burgers 2026</a></li>
+      <li><a href="https://download.belastingdienst.nl/belastingdienst/docs/rekenvoorschriften_voor_geautomatiseerde_loonadministratie_lh991z62fd.pdf" target="_blank" rel="noreferrer">Belastingdienst — rekenvoorschriften geautomatiseerde loonadministratie 2026, versie 2</a></li>
+      <li><a href="https://download.belastingdienst.nl/belastingdienst/dl/rekenhulpen/loonheffing/2026/v01/pdf/wit_bb_nl_std_20260101.pdf" target="_blank" rel="noreferrer">Belastingdienst — witte tabel bijzondere beloningen 2026</a></li>
+      <li><a href="https://www.p-direkt.nl/informatie-rijkspersoneel-2020/financien/salaris/salarisstrook-en-jaaropgave/wat-staat-er-op-mijn-salarisstrook" target="_blank" rel="noreferrer">P-Direkt — opbouw van de salarisstrook</a></li>
       <li><a href="https://wetten.overheid.nl/BWBR0030989/2026-01-01" target="_blank" rel="noreferrer">Besluit percentages drempel- en toetsingsinkomen zorgtoeslag</a></li>
       <li><a href="https://wetten.overheid.nl/BWBR0051838/2026-01-01" target="_blank" rel="noreferrer">Regeling standaardpremie 2026</a></li>
       <li><a href="https://wetten.overheid.nl/BWBR0051841/2026-01-01" target="_blank" rel="noreferrer">Regeling huurtoeslaggrenzen 2026</a></li>
@@ -602,7 +771,7 @@
       <li><a href="https://zoek.officielebekendmakingen.nl/stcrt-2025-44508.html" target="_blank" rel="noreferrer">Staatscourant 2025, 44508 — AKW-bedragen per 1 januari 2026</a></li>
       <li><a href="https://www.belastingdienst.nl/wps/wcm/connect/nl/toeslagen/content/hulpmiddel-proefberekening-toeslagen" target="_blank" rel="noreferrer">Officiële proefberekening toeslagen</a></li>
     </ul>
-    <p><strong>Niet meegenomen:</strong> een schaal-, trede- of contracturenwijziging tijdens 2026, roosterdienst volgens hoofdstuk 22, TOD, PAS, verlof met afwijkende premieverdeling, pensioenovergangsrecht, verkoop van IKB-uren, eigen woning, box 2/3-belasting, alimentatie en gemeentelijke regelingen. Pensioengevende toelagen op de peildatum kun je wel invoeren.</p>`;
+    <p><strong>Niet meegenomen:</strong> AOW-leeftijd of emigratie in 2026, een schaal-, trede- of contracturenwijziging tijdens het jaar, roosterdienst volgens hoofdstuk 22, TOD, PAS, verlof met afwijkende premieverdeling, pensioenovergangsrecht, verkoop van IKB-uren, eigen woning, de belasting over box 2/3, alimentatie en gemeentelijke regelingen. Pensioengevende toelagen op de peildatum kun je wel invoeren.</p>`;
 
   const modal = $('#infoModal');
   $$('[data-open-modal]').forEach(button => button.addEventListener('click', () => {
@@ -618,9 +787,11 @@
     const d = window.latestCalculation;
     const planned = extraHoursProfile();
     const plannedNet = planned.enabled ? d.disposable - getData().disposable : 0;
+    const payroll = window.latestPayroll;
     const rijkLines = d.rijk ? `\nCAO Rijk: schaal ${d.rijk.scale}, trede ${d.rijk.step}, ${d.rijk.hours} uur\nIKB gemiddeld: ${euroPrecise.format(d.rijk.ikbAverageMonthly)} per maand\nABP eigen bijdrage: ${euroPrecise.format(d.rijk.pensionAnnual / 12)} per maand` : '';
     const extraLines = planned.enabled && planned.hours ? `\nExtra uren: ${oneDecimal.format(planned.hours)} uur\nBruto uitbetaling extra uren: ${euroPrecise.format(planned.grossCash)}\nNetto over van extra uren: ${euroPrecise.format(plannedNet)} (${euroPrecise.format(plannedNet / planned.hours)} per uur)${planned.leaveHours ? `\nCompensatieverlof: ${oneDecimal.format(planned.leaveHours)} uur` : ''}` : '';
-    const text = `NettoInzicht 2026${rijkLines}${extraLines}\nOver na gekozen vaste posten: ${euro.format(d.disposable / 12)} per maand\nNetto loon huishouden: ${euro.format(d.netWage / 12)} per maand\nRegelingen en kinderbijslag: ${euro.format(d.benefits / 12)} per maand\nZorg, huur en opvang: ${euro.format(d.selectedCosts / 12)} per maand\nIndicatieve uitkomst; controleer je loonstrook en officiële beschikkingen.`;
+    const payrollLines = payroll ? `\nVerwachte P-Direkt-uitbetaling ${MONTH_NAMES[payroll.selectedMonth - 1]}: ${euroPrecise.format(payroll.selected.bankNet)}\nBijzonder tarief: ${(payroll.rate * 100).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%\nVerwachte jaarcorrectie: ${payroll.settlement >= 0 ? 'terug ' : 'bijbetalen '}${euroPrecise.format(Math.abs(payroll.settlement))}` : '';
+    const text = `NettoInzicht 2026${rijkLines}${extraLines}${payrollLines}\nOver na gekozen vaste posten: ${euro.format(d.disposable / 12)} per maand\nNetto loon huishouden: ${euro.format(d.netWage / 12)} per maand\nRegelingen en kinderbijslag: ${euro.format(d.benefits / 12)} per maand\nZorg, huur en opvang: ${euro.format(d.selectedCosts / 12)} per maand\nIndicatieve uitkomst; controleer je loonstrook en officiële beschikkingen.`;
     try { await navigator.clipboard.writeText(text); }
     catch { /* Clipboard kan in sommige previews geblokkeerd zijn. */ }
     const toast = $('#toast');

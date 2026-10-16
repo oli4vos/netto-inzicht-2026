@@ -150,6 +150,34 @@ input:focus, select:focus { border-color: var(--dark); box-shadow: 0 0 0 3px rgb
 .card-title-row h3 { margin: 0; font-size: 14px; }
 .card-title-row > span, .card-title-row button { color: #96a69f; font-size: 10px; text-transform: uppercase; letter-spacing: .09em; }
 .card-title-row button { border: 0; border-bottom: 1px solid currentColor; background: none; cursor: pointer; padding: 2px 0; }
+.payroll-card { margin-bottom: 20px; background: #f6f2e8; color: var(--dark); border-color: #d7d0bf; }
+.payroll-card .card-title-row > span { color: #69736e; }
+.payroll-hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding: 7px 0 22px; border-bottom: 1px solid #d9d2c2; }
+.payroll-hero > div { display: grid; gap: 6px; }
+.payroll-hero span, .payroll-stats span, .settlement-strip span { color: #65716b; font-size: 9px; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+.payroll-hero > div:first-child strong { font-family: Georgia, serif; font-size: clamp(42px, 6vw, 64px); line-height: 1; font-weight: 400; letter-spacing: -.05em; color: var(--dark); }
+.payroll-hero > div:last-child { text-align: right; }
+.payroll-hero > div:last-child strong { font-size: 21px; color: #9a3f28; }
+.payroll-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid #d9d2c2; }
+.payroll-stats > div { display: grid; gap: 6px; padding: 16px 12px; border-right: 1px solid #d9d2c2; }
+.payroll-stats > div:first-child { padding-left: 0; }
+.payroll-stats > div:last-child { border-right: 0; }
+.payroll-stats strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+.payroll-details { border-bottom: 1px solid #d9d2c2; }
+.payroll-details summary { display: flex; justify-content: space-between; gap: 12px; padding: 15px 0; cursor: pointer; list-style: none; font-size: 11px; font-weight: 750; }
+.payroll-details summary::-webkit-details-marker { display: none; }
+.payroll-details summary span:last-child { color: #69736e; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.payroll-details[open] summary span:last-child { font-size: 0; }
+.payroll-details[open] summary span:last-child::after { content: "sluit"; font-size: 9px; }
+.payroll-breakdown .breakdown-row { border-color: #ded7c9; }
+.payroll-breakdown .breakdown-row small { color: #6c746e; }
+.payroll-breakdown .breakdown-row.total { border-top-color: var(--dark); }
+.settlement-strip { padding-top: 17px; }
+.settlement-strip > div { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+.settlement-strip strong { font-size: 17px; }
+.settlement-strip strong.refund { color: #1e684e; }
+.settlement-strip strong.payment { color: #9a3f28; }
+.settlement-strip p { margin: 8px 0 0; color: #66716b; font-size: 9px; line-height: 1.55; }
 .extra-result-card { position: relative; margin-bottom: 20px; background: #e9f3a7; color: var(--dark); border-color: rgba(255,255,255,.2); overflow: hidden; }
 .extra-result-card::after { content: ""; position: absolute; width: 170px; height: 170px; right: -80px; top: -90px; border: 1px solid rgba(23,56,47,.14); border-radius: 50%; box-shadow: 0 0 0 28px rgba(23,56,47,.04), 0 0 0 56px rgba(23,56,47,.025); pointer-events: none; }
 .extra-result-card .card-title-row { position: relative; z-index: 1; margin-bottom: 17px; }
@@ -271,6 +299,11 @@ dialog::backdrop { background: rgba(12, 22, 18, .62); backdrop-filter: blur(5px)
   .extra-hours-row .remove-week-button { grid-column: 3; grid-row: 1; }
   .extra-result-stats { grid-template-columns: 1fr 1fr; }
   .extra-result-stats > div:first-child { padding-left: 12px; }
+  .payroll-hero { grid-template-columns: 1fr; }
+  .payroll-hero > div:last-child { text-align: left; }
+  .payroll-stats { grid-template-columns: 1fr; }
+  .payroll-stats > div, .payroll-stats > div:first-child { padding-left: 0; border-right: 0; border-bottom: 1px solid #d9d2c2; }
+  .payroll-stats > div:last-child { border-bottom: 0; }
   .field-grid.four { grid-template-columns: 1fr 1fr; gap: 10px; }
   .cao-preview { grid-template-columns: 1fr; }
   .mini-stats { grid-template-columns: 1fr; }
